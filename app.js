@@ -1,7 +1,3 @@
-// ============================================
-// 📋 CONFIGURACIÓN GLOBAL
-// ============================================
-
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzJIEVMrQoPv_KawZYmCO1C64J2bnBG_Z4YB3vDUzB96GqNwuMT59ePbotkcvG-HXLPFA/exec';
 
 const PRACTICE_TEXTS = {
@@ -27,93 +23,56 @@ let isTestActive = false;
 let errors = 0;
 let totalChars = 0;
 
-// ============================================
-// 🔐 LOGIN SOLO CON LDAP
-// ============================================
-
 function login() {
-    console.log('🔐 Iniciando login...');
-    
     const id = document.getElementById('userId').value.trim().toLowerCase();
     
     if (!id) {
-        alert('⚠️ CAMPO OBLIGATORIO\n\nDebes ingresar tu LDAP');
+        alert('⚠️ Debes ingresar tu LDAP');
         return;
     }
     
-    const idRegex = /^[a-z0-9]+$/;
-    if (!idRegex.test(id)) {
-        alert('⚠️ FORMATO INCORRECTO\n\nEl LDAP debe:\n• Solo letras minusculas\n• Solo numeros\n• Sin espacios\n\nEjemplo: jcolmenares');
+    if (!/^[a-z0-9]+$/.test(id)) {
+        alert('⚠️ LDAP invalido (solo minusculas y numeros)');
         document.getElementById('userId').focus();
         return;
     }
     
     if (id.length < 3) {
-        alert('⚠️ LDAP muy corto (minimo 3 caracteres)');
+        alert('⚠️ LDAP muy corto');
         document.getElementById('userId').focus();
         return;
     }
     
-    if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-        alert('❌ SISTEMA NO CONFIGURADO\n\nContacta al administrador.');
-        return;
-    }
-    
     document.getElementById('loadingOverlay').classList.add('show');
-    document.querySelector('.loading-overlay p').textContent = 'Validando LDAP...';
-    
-    // Validar usando JSONP (evita problemas de CORS)
     validateLDAPWithJSONP(id);
 }
 
-// ============================================
-// 🔍 VALIDAR LDAP CON JSONP (SIN CORS)
-// ============================================
-
 function validateLDAPWithJSONP(ldap) {
-    console.log('🔍 Validando LDAP con JSONP:', ldap);
-    
-    // Crear callback único
     const callbackName = 'ldapCallback_' + Date.now();
     
-    // Crear función callback global
     window[callbackName] = function(data) {
-        console.log('📥 Respuesta recibida:', data);
-        
         document.getElementById('loadingOverlay').classList.remove('show');
         
         if (data.exists === true) {
-            console.log('✅ LDAP valido');
-            
             currentUser.name = data.nombre || 'Usuario';
             currentUser.id = ldap;
             
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('levelSelection').classList.add('active');
-            
-            setTimeout(() => {
-                alert(`✅ BIENVENIDO/A\n\n${currentUser.name}\n\nEquipo: ${data.lider || 'N/A'}`);
-            }, 300);
         } else {
-            console.log('❌ LDAP no encontrado');
-            alert('❌ ACCESO DENEGADO\n\nEl LDAP "' + ldap + '" NO existe en el sistema.\n\nVerifica tu LDAP o contacta al administrador.');
+            alert('❌ LDAP "' + ldap + '" no existe en el sistema');
             document.getElementById('userId').focus();
         }
         
-        // Limpiar
         delete window[callbackName];
         document.body.removeChild(script);
     };
     
-    // Crear script tag
     const script = document.createElement('script');
     script.src = `${GOOGLE_SCRIPT_URL}?action=checkUser&ldap=${encodeURIComponent(ldap)}&callback=${callbackName}`;
-    
-    // Manejar errores
     script.onerror = function() {
-        console.error('❌ Error al cargar script');
         document.getElementById('loadingOverlay').classList.remove('show');
-        alert('❌ ERROR DE CONEXION\n\nNo se pudo conectar con el sistema.\n\nVerifica:\n1. Tu conexion a internet\n2. Que el Google Apps Script este implementado como "Cualquier persona"\n\nContacta al administrador si el problema persiste.');
+        alert('❌ Error de conexion');
         delete window[callbackName];
         document.body.removeChild(script);
     };
@@ -132,10 +91,6 @@ function logout() {
     }
 }
 
-// ============================================
-// 🎯 SELECCIÓN DE NIVEL
-// ============================================
-
 function selectLevel(level) {
     currentLevel = level;
     currentText = PRACTICE_TEXTS[level];
@@ -149,7 +104,7 @@ function selectLevel(level) {
 }
 
 function backToLevels() {
-    if (isTestActive && !confirm('¿Salir? Perderas tu progreso.')) return;
+    if (isTestActive && !confirm('¿Salir?')) return;
     stopTest();
     document.getElementById('typingSection').classList.remove('active');
     document.getElementById('levelSelection').classList.add('active');
@@ -171,10 +126,6 @@ function updateLevelInfo() {
     targetInfo.innerHTML = `<strong>Meta:</strong> ${target.ppm}+ PPM | ${target.accuracy}%+ Precision`;
 }
 
-// ============================================
-// 📝 VISUALIZACIÓN
-// ============================================
-
 function displayText() {
     const display = document.getElementById('textDisplay');
     display.innerHTML = currentText.split('').map((char, index) => {
@@ -182,26 +133,35 @@ function displayText() {
     }).join('');
 }
 
+// ============================================
+// 🎯 SCROLL AUTOMÁTICO DEFINITIVO
+// ============================================
+
 function scrollToCurrentChar() {
     const currentChar = document.querySelector('.char.current');
-    if (currentChar) {
-        const textDisplay = document.getElementById('textDisplay');
-        const charTop = currentChar.offsetTop;
-        const displayHeight = textDisplay.clientHeight;
-        const scrollTop = textDisplay.scrollTop;
+    
+    if (!currentChar) return;
+    
+    const textDisplay = document.getElementById('textDisplay');
+    
+    // Obtener posiciones
+    const containerRect = textDisplay.getBoundingClientRect();
+    const charRect = currentChar.getBoundingClientRect();
+    
+    // Verificar si está fuera de vista
+    const margen = 50;
+    const isAbove = charRect.top < containerRect.top + margen;
+    const isBelow = charRect.bottom > containerRect.bottom - margen;
+    
+    if (isAbove || isBelow) {
+        // Hacer scroll instantáneo para mantener visible
+        const charOffsetTop = currentChar.offsetTop;
+        const containerHeight = textDisplay.clientHeight;
         
-        if (charTop < scrollTop + 20 || charTop > scrollTop + displayHeight - 60) {
-            textDisplay.scrollTo({
-                top: Math.max(0, charTop - (displayHeight / 2) + 20),
-                behavior: 'smooth'
-            });
-        }
+        // Centrar el carácter
+        textDisplay.scrollTop = charOffsetTop - (containerHeight / 2);
     }
 }
-
-// ============================================
-// ⏱️ TEST
-// ============================================
 
 function startTest() {
     if (isTestActive) return;
@@ -243,7 +203,9 @@ function handleInput(e) {
         }
     }
     
+    // SCROLL AUTOMÁTICO - se ejecuta en cada tecla
     scrollToCurrentChar();
+    
     updateStats();
     
     if (inputText.length >= currentText.length) finishTest();
@@ -309,13 +271,9 @@ function resetStats() {
     document.getElementById('score').textContent = '0';
 }
 
-// ============================================
-// 💾 GUARDAR
-// ============================================
-
 function saveResults(time, ppm, accuracy, score) {
     document.getElementById('loadingOverlay').classList.add('show');
-    document.querySelector('.loading-overlay p').textContent = 'Guardando resultados...';
+    document.querySelector('.loading-overlay p').textContent = 'Guardando...';
     
     const data = {
         timestamp: new Date().toISOString(),
@@ -330,29 +288,15 @@ function saveResults(time, ppm, accuracy, score) {
         texto_palabras: currentText.split(' ').length
     };
     
-    if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-        document.getElementById('loadingOverlay').classList.remove('show');
-        return;
-    }
-    
     fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
-    .then(() => {
-        console.log('✅ Datos enviados');
-        document.getElementById('loadingOverlay').classList.remove('show');
-    })
-    .catch(() => {
-        document.getElementById('loadingOverlay').classList.remove('show');
-    });
+    .then(() => document.getElementById('loadingOverlay').classList.remove('show'))
+    .catch(() => document.getElementById('loadingOverlay').classList.remove('show'));
 }
-
-// ============================================
-// 📊 RESULTADOS
-// ============================================
 
 function showResults(time, ppm, accuracy, score) {
     const target = LEVEL_TARGETS[currentLevel];
