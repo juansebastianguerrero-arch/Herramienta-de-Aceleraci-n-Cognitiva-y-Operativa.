@@ -3,7 +3,7 @@
 // ============================================
 
 // ⚠️ IMPORTANTE: Reemplaza esta URL con la de tu Google Apps Script
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbwXsSwQXFM_ATqQpw9XvCacaNcpa5mLSa7WHidbc6h0ZKlF-YtIKZnWjY6GWBXYV5Ss2g/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycby09KuBW3a0v16r7GUwJHwjVQa2amXHmJduVExetc0sqpcOHj_p-su9ofqL1cCpZ4O9cA/exec';
 
 // Textos de práctica por nivel (SIN TILDES NI SÍMBOLOS ESPECIALES)
 const PRACTICE_TEXTS = {
