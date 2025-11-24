@@ -1,12 +1,8 @@
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzJIEVMrQoPv_KawZYmCO1C64J2bnBG_Z4YB3vDUzB96GqNwuMT59ePbotkcvG-HXLPFA/exec';
+// ============================================
+// 📋 CONFIGURACIÓN GLOBAL
+// ============================================
 
-const PRACTICE_TEXTS = {
-    1: "En nuestro botiquin de herramientas buscamos que uses cada recurso a tu favor. El proceso consta de cinco pasos esenciales. Primero, el Sondeo: usa todas las herramientas disponibles y revisa la tipificacion. Segundo, la Exploracion: las preguntas son claves para que el usuario llegue a la solucion contigo. Tercero, la Comunicacion: se claro al explicar las razones por las que no excluimos el reclamo. Cuarto, las Recomendaciones: dale consejos al usuario para evitar futuros inconvenientes. Quinto, Asesora su Reputacion: revisa el impacto y destaca su medalla. Nunca cierres el chat apresuradamente.",
-    
-    2: "Cuando un comprador menciona que recibio el producto con diferencias, debemos indagar profundamente. Por ejemplo, si hay problemas con el tamano de unas brocas, preguntamos: Crees que pudo haber pasado algo durante el envio? Esto lo especificas en la ficha tecnica? Has presentado esta situacion anteriormente? En la comunicacion, utiliza frases empaticas como: Como pudimos verlo juntos o Tal como pudiste notarlo. Si el vendedor afirma que el comprador miente, manten la calma y solicita imagenes como evidencia para validar las diferencias, evitando confrontaciones directas.",
-    
-    3: "Asesorar sobre la reputacion es vital para la experiencia del vendedor. Debemos revisar si supero el 1,5% de reclamos permitidos; si esta en un 2,22%, debemos calcular cuantas ventas necesita para recuperar su color verde. Explicale el programa de Recovery Seller y ayudale a proyectar fechas en un calendario de 365 dias. Si el impacto proviene de mediaciones o cancelaciones, revisenlo juntos. Finalmente, propon revisar las publicaciones a fondo, completar la ficha tecnica en tiempo real y aclarar las medidas en la descripcion para que no vuelva a recibir reclamos en esos productos."
-};
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzJIEVMrQoPv_KawZYmCO1C64J2bnBG_Z4YB3vDUzB96GqNwuMT59ePbotkcvG-HXLPFA/exec';
 
 const LEVEL_TARGETS = {
     1: { ppm: 40, accuracy: 95, name: "Nivel 1: Fundamentos" },
@@ -14,7 +10,16 @@ const LEVEL_TARGETS = {
     3: { ppm: 60, accuracy: 97, name: "Nivel 3: Gestion Avanzada" }
 };
 
-let currentUser = { name: '', id: '' };
+const LEVEL_TEXTS = {
+    1: `El botiquin de herramientas es fundamental para brindar un servicio de calidad. Los 5 pasos esenciales del proceso de atencion son: saludo inicial, indagacion profunda, resolucion efectiva, confirmacion de satisfaccion y despedida cordial. Cada paso debe ejecutarse con precision y empatia hacia el cliente.`,
+    
+    2: `Como puedo ayudarte hoy? Entiendo tu situacion y estoy aqui para resolverla. Cuentame mas detalles sobre lo que esta pasando. Lamento mucho los inconvenientes que has experimentado. Vamos a solucionar esto juntos. Cual es tu principal preocupacion en este momento? Dejame verificar esa informacion para ti.`,
+    
+    3: `El programa Recovery Seller tiene como objetivo recuperar el 85% de los vendedores afectados. El calculo se realiza asi: total de casos resueltos dividido entre casos totales multiplicado por 100. Si tenemos 340 casos resueltos de 400 totales, el porcentaje es 85%. La meta trimestral es mantener un NPS superior a 75 puntos.`
+};
+
+// Variables globales
+let currentUser = { name: '', id: '', lider: '', turno: '', color: '' };
 let currentLevel = 0;
 let currentText = '';
 let startTime = null;
@@ -22,89 +27,137 @@ let timerInterval = null;
 let isTestActive = false;
 let errors = 0;
 let totalChars = 0;
+let currentCharIndex = 0;
+
+// ============================================
+// 🔐 SISTEMA DE LOGIN
+// ============================================
 
 function login() {
     const id = document.getElementById('userId').value.trim().toLowerCase();
     
+    // Validaciones
     if (!id) {
-        alert('⚠️ Debes ingresar tu LDAP');
+        mostrarAlerta('⚠️ Debes ingresar tu LDAP', 'warning');
         return;
     }
     
     if (!/^[a-z0-9]+$/.test(id)) {
-        alert('⚠️ LDAP invalido (solo minusculas y numeros)');
+        mostrarAlerta('⚠️ LDAP invalido (solo minusculas y numeros)', 'error');
         document.getElementById('userId').focus();
         return;
     }
     
     if (id.length < 3) {
-        alert('⚠️ LDAP muy corto');
+        mostrarAlerta('⚠️ LDAP muy corto (minimo 3 caracteres)', 'error');
         document.getElementById('userId').focus();
         return;
     }
     
-    document.getElementById('loadingOverlay').classList.add('show');
+    // Mostrar loading
+    mostrarLoading('Validando LDAP...');
+    
+    // Validar con JSONP
     validateLDAPWithJSONP(id);
 }
 
 function validateLDAPWithJSONP(ldap) {
-    const callbackName = 'ldapCallback_' + Date.now();
+    const callbackName = 'jsonpCallback_' + Date.now();
     
-    window[callbackName] = function(data) {
-        document.getElementById('loadingOverlay').classList.remove('show');
+    window[callbackName] = function(response) {
+        ocultarLoading();
         
-        if (data.exists === true) {
-            currentUser.name = data.nombre || 'Usuario';
-            currentUser.id = ldap;
+        if (response.exists) {
+            // Usuario válido
+            currentUser = {
+                id: ldap,
+                name: response.nombre,
+                lider: response.lider,
+                turno: response.turno,
+                color: response.color
+            };
             
+            console.log('✅ Usuario autenticado:', currentUser);
+            
+            // Mostrar selección de niveles
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('levelSelection').classList.add('active');
+            
+            mostrarAlerta(`✅ Bienvenido ${currentUser.name}!`, 'success');
         } else {
-            alert('❌ LDAP "' + ldap + '" no existe en el sistema');
+            mostrarAlerta('❌ LDAP no encontrado en el sistema', 'error');
             document.getElementById('userId').focus();
         }
         
+        // Limpiar callback
         delete window[callbackName];
-        document.body.removeChild(script);
+        const script = document.querySelector(`script[src*="${callbackName}"]`);
+        if (script) script.remove();
     };
     
+    // Crear script tag
     const script = document.createElement('script');
     script.src = `${GOOGLE_SCRIPT_URL}?action=checkUser&ldap=${encodeURIComponent(ldap)}&callback=${callbackName}`;
     script.onerror = function() {
-        document.getElementById('loadingOverlay').classList.remove('show');
-        alert('❌ Error de conexion');
+        ocultarLoading();
+        mostrarAlerta('❌ Error de conexion. Intenta nuevamente.', 'error');
         delete window[callbackName];
-        document.body.removeChild(script);
     };
     
     document.body.appendChild(script);
 }
 
 function logout() {
-    if (confirm('¿Cerrar sesion?')) {
-        currentUser = { name: '', id: '' };
-        currentLevel = 0;
-        document.getElementById('userId').value = '';
-        document.getElementById('loginSection').classList.remove('hidden');
-        document.getElementById('levelSelection').classList.remove('active');
-        document.getElementById('typingSection').classList.remove('active');
+    if (isTestActive && !confirm('¿Estas seguro de cerrar sesion? Se perdera el progreso actual.')) {
+        return;
     }
+    
+    stopTest();
+    currentUser = { name: '', id: '', lider: '', turno: '', color: '' };
+    currentLevel = 0;
+    
+    document.getElementById('levelSelection').classList.remove('active');
+    document.getElementById('typingSection').classList.remove('active');
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('userId').value = '';
+    document.getElementById('userId').focus();
+    
+    mostrarAlerta('👋 Sesion cerrada', 'info');
 }
+
+// ============================================
+// 📚 SISTEMA DE NIVELES
+// ============================================
 
 function selectLevel(level) {
     currentLevel = level;
-    currentText = PRACTICE_TEXTS[level];
+    currentText = LEVEL_TEXTS[level];
     
+    console.log(`📚 Nivel ${level} seleccionado`);
+    console.log(`📝 Texto: ${currentText.length} caracteres`);
+    
+    // Cambiar vista
     document.getElementById('levelSelection').classList.remove('active');
     document.getElementById('typingSection').classList.add('active');
     
+    // Actualizar información del nivel
     updateLevelInfo();
+    
+    // Mostrar texto
     displayText();
+    
+    // Resetear estadísticas
     resetStats();
+    
+    // Focus en el botón de inicio
+    document.getElementById('startBtn').focus();
 }
 
 function backToLevels() {
-    if (isTestActive && !confirm('¿Salir?')) return;
+    if (isTestActive && !confirm('¿Salir del test? Se perdera el progreso actual.')) {
+        return;
+    }
+    
     stopTest();
     document.getElementById('typingSection').classList.remove('active');
     document.getElementById('levelSelection').classList.add('active');
@@ -118,11 +171,14 @@ function updateLevelInfo() {
     const targetInfo = document.getElementById('targetInfo');
     
     badge.textContent = target.name;
+    
+    // Color según nivel
     if (currentLevel === 1) badge.style.background = '#4CAF50';
     if (currentLevel === 2) badge.style.background = '#FF9800';
     if (currentLevel === 3) badge.style.background = '#f44336';
     
-    description.textContent = `${currentText.split(' ').length} palabras`;
+    const wordCount = currentText.split(' ').length;
+    description.textContent = `${wordCount} palabras | ${currentText.length} caracteres`;
     targetInfo.innerHTML = `<strong>Meta:</strong> ${target.ppm}+ PPM | ${target.accuracy}%+ Precision`;
 }
 
@@ -131,136 +187,263 @@ function displayText() {
     display.innerHTML = currentText.split('').map((char, index) => {
         return `<span class="char" id="char-${index}">${char === ' ' ? '&nbsp;' : char}</span>`;
     }).join('');
+    
+    // Agregar barra de progreso
+    const progressBar = document.createElement('div');
+    progressBar.className = 'progress-indicator';
+    progressBar.id = 'progressBar';
+    display.insertBefore(progressBar, display.firstChild);
 }
 
 // ============================================
-// 🎯 SCROLL AUTOMÁTICO DEFINITIVO
+// ⏱️ SISTEMA DE TEST
 // ============================================
-
-function scrollToCurrentChar() {
-    const currentChar = document.querySelector('.char.current');
-    
-    if (!currentChar) return;
-    
-    const textDisplay = document.getElementById('textDisplay');
-    
-    // Obtener posiciones
-    const containerRect = textDisplay.getBoundingClientRect();
-    const charRect = currentChar.getBoundingClientRect();
-    
-    // Verificar si está fuera de vista
-    const margen = 50;
-    const isAbove = charRect.top < containerRect.top + margen;
-    const isBelow = charRect.bottom > containerRect.bottom - margen;
-    
-    if (isAbove || isBelow) {
-        // Hacer scroll instantáneo para mantener visible
-        const charOffsetTop = currentChar.offsetTop;
-        const containerHeight = textDisplay.clientHeight;
-        
-        // Centrar el carácter
-        textDisplay.scrollTop = charOffsetTop - (containerHeight / 2);
-    }
-}
 
 function startTest() {
     if (isTestActive) return;
+    
+    console.log('🚀 Iniciando test...');
     
     isTestActive = true;
     startTime = Date.now();
     errors = 0;
     totalChars = 0;
+    currentCharIndex = 0;
     
+    // Habilitar textarea
     const inputArea = document.getElementById('inputArea');
     inputArea.disabled = false;
     inputArea.value = '';
+    inputArea.placeholder = 'Comienza a escribir...';
     inputArea.focus();
     
-    document.getElementById('startBtn').disabled = true;
-    document.getElementById('results').classList.remove('show');
+    // Cambiar botón
+    const startBtn = document.getElementById('startBtn');
+    startBtn.textContent = 'Test en Progreso...';
+    startBtn.disabled = true;
     
+    // Iniciar cronómetro
     timerInterval = setInterval(updateTimer, 100);
-    inputArea.addEventListener('input', handleInput);
+    
+    // Resaltar primer carácter
+    document.getElementById('char-0').classList.add('current');
+    
+    mostrarAlerta('✅ Test iniciado! Escribe con precision.', 'success');
 }
+
+function stopTest() {
+    if (!isTestActive) return;
+    
+    console.log('⏹️ Deteniendo test...');
+    
+    isTestActive = false;
+    clearInterval(timerInterval);
+    
+    // Deshabilitar textarea
+    const inputArea = document.getElementById('inputArea');
+    inputArea.disabled = true;
+    
+    // Restaurar botón
+    const startBtn = document.getElementById('startBtn');
+    startBtn.textContent = 'Iniciar Test';
+    startBtn.disabled = false;
+}
+
+function resetTest() {
+    stopTest();
+    
+    // Limpiar textarea
+    document.getElementById('inputArea').value = '';
+    document.getElementById('inputArea').disabled = true;
+    
+    // Resetear estadísticas
+    resetStats();
+    
+    // Limpiar resultados
+    document.getElementById('results').innerHTML = '';
+    
+    // Resetear display
+    if (currentText) {
+        displayText();
+    }
+    
+    console.log('🔄 Test reseteado');
+}
+
+// ============================================
+// ⌨️ MANEJO DE ESCRITURA
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const inputArea = document.getElementById('inputArea');
+    
+    if (inputArea) {
+        // Bloquear pegado
+        inputArea.addEventListener('paste', function(e) {
+            e.preventDefault();
+            mostrarAlerta('⚠️ No puedes pegar texto. Debes escribir manualmente.', 'warning');
+        });
+        
+        // Manejar input
+        inputArea.addEventListener('input', handleInput);
+        
+        // Bloquear copiar
+        inputArea.addEventListener('copy', function(e) {
+            e.preventDefault();
+        });
+        
+        // Bloquear cortar
+        inputArea.addEventListener('cut', function(e) {
+            e.preventDefault();
+        });
+    }
+});
 
 function handleInput(e) {
     if (!isTestActive) return;
     
     const inputText = e.target.value;
-    totalChars = inputText.length;
-    errors = 0;
+    const inputLength = inputText.length;
     
+    // Actualizar progreso
+    updateProgress(inputLength);
+    
+    // Actualizar visualización carácter por carácter
     for (let i = 0; i < currentText.length; i++) {
         const charElement = document.getElementById(`char-${i}`);
         
-        if (i < inputText.length) {
-            charElement.className = inputText[i] === currentText[i] ? 'char correct' : 'char incorrect';
-            if (inputText[i] !== currentText[i]) errors++;
-        } else if (i === inputText.length) {
+        if (i < inputLength) {
+            // Carácter ya escrito
+            if (inputText[i] === currentText[i]) {
+                charElement.className = 'char correct';
+            } else {
+                charElement.className = 'char incorrect';
+                // Contar error solo una vez
+                if (i === inputLength - 1 && !charElement.dataset.errorCounted) {
+                    errors++;
+                    charElement.dataset.errorCounted = 'true';
+                }
+            }
+        } else if (i === inputLength) {
+            // Carácter actual (cursor)
             charElement.className = 'char current';
+            currentCharIndex = i;
+            
+            // Scroll automático inteligente
+            scrollToCurrentChar(charElement);
         } else {
+            // Caracteres pendientes
             charElement.className = 'char';
+            delete charElement.dataset.errorCounted;
         }
     }
     
-    // SCROLL AUTOMÁTICO - se ejecuta en cada tecla
-    scrollToCurrentChar();
-    
+    // Actualizar estadísticas
+    totalChars = inputLength;
     updateStats();
     
-    if (inputText.length >= currentText.length) finishTest();
+    // Verificar si terminó
+    if (inputLength === currentText.length) {
+        finishTest();
+    }
 }
 
+// ============================================
+// 📊 SCROLL AUTOMÁTICO INTELIGENTE
+// ============================================
+
+function scrollToCurrentChar(charElement) {
+    const display = document.getElementById('textDisplay');
+    
+    if (!charElement || !display) return;
+    
+    // Obtener posiciones
+    const charTop = charElement.offsetTop;
+    const charHeight = charElement.offsetHeight;
+    const displayHeight = display.clientHeight;
+    const currentScroll = display.scrollTop;
+    
+    // Calcular scroll objetivo (mantener cursor en el tercio superior)
+    const targetScroll = charTop - (displayHeight / 3);
+    
+    // Solo hacer scroll si es necesario
+    if (charTop < currentScroll + 50 || charTop > currentScroll + displayHeight - 50) {
+        display.scrollTo({
+            top: Math.max(0, targetScroll),
+            behavior: 'smooth'
+        });
+    }
+    
+    // Resaltar línea actual
+    highlightCurrentLine();
+}
+
+function highlightCurrentLine() {
+    // Remover highlight anterior
+    document.querySelectorAll('.line-highlight').forEach(el => {
+        el.classList.remove('line-highlight');
+    });
+    
+    // Encontrar inicio y fin de línea actual
+    let lineStart = currentCharIndex;
+    while (lineStart > 0 && currentText[lineStart - 1] !== '\n' && currentText[lineStart - 1] !== ' ') {
+        lineStart--;
+    }
+    
+    let lineEnd = currentCharIndex;
+    while (lineEnd < currentText.length && currentText[lineEnd] !== '\n' && currentText[lineEnd] !== ' ') {
+        lineEnd++;
+    }
+    
+    // Aplicar highlight a la palabra actual
+    for (let i = lineStart; i <= lineEnd && i < currentText.length; i++) {
+        const char = document.getElementById(`char-${i}`);
+        if (char && !char.classList.contains('correct') && !char.classList.contains('incorrect')) {
+            char.classList.add('line-highlight');
+        }
+    }
+}
+
+function updateProgress(currentLength) {
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        const percentage = (currentLength / currentText.length) * 100;
+        progressBar.style.width = percentage + '%';
+    }
+}
+
+// ============================================
+// 📈 ACTUALIZACIÓN DE ESTADÍSTICAS
+// ============================================
+
 function updateTimer() {
-    if (!startTime) return;
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    document.getElementById('timer').textContent = elapsed + 's';
+    if (!isTestActive || !startTime) return;
+    
+    const elapsed = (Date.now() - startTime) / 1000;
+    document.getElementById('timer').textContent = elapsed.toFixed(1) + 's';
 }
 
 function updateStats() {
-    if (!startTime) return;
+    if (!isTestActive || !startTime) return;
     
-    const elapsed = (Date.now() - startTime) / 1000 / 60;
-    const ppm = Math.round((totalChars / 5) / elapsed) || 0;
-    const accuracy = totalChars > 0 ? Math.round(((totalChars - errors) / totalChars) * 100) : 100;
-    const score = Math.round(ppm * (accuracy / 100));
+    const elapsed = (Date.now() - startTime) / 1000;
     
+    // Calcular PPM (Palabras Por Minuto)
+    const wordsTyped = totalChars / 5; // Promedio de 5 caracteres por palabra
+    const minutes = elapsed / 60;
+    const ppm = minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
+    
+    // Calcular precisión
+    const accuracy = totalChars > 0 ? ((totalChars - errors) / totalChars * 100) : 100;
+    
+    // Calcular puntaje
+    const score = ppm * (accuracy / 100);
+    
+    // Actualizar UI
     document.getElementById('wpm').textContent = ppm;
-    document.getElementById('accuracy').textContent = accuracy + '%';
+    document.getElementById('accuracy').textContent = accuracy.toFixed(1) + '%';
     document.getElementById('errors').textContent = errors;
-    document.getElementById('score').textContent = score;
-}
-
-function finishTest() {
-    stopTest();
-    
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    const ppm = parseInt(document.getElementById('wpm').textContent);
-    const accuracy = parseInt(document.getElementById('accuracy').textContent);
-    const score = parseInt(document.getElementById('score').textContent);
-    
-    saveResults(finalTime, ppm, accuracy, score);
-    showResults(finalTime, ppm, accuracy, score);
-}
-
-function stopTest() {
-    isTestActive = false;
-    clearInterval(timerInterval);
-    const inputArea = document.getElementById('inputArea');
-    inputArea.disabled = true;
-    inputArea.removeEventListener('input', handleInput);
-    document.getElementById('startBtn').disabled = false;
-}
-
-function resetTest() {
-    stopTest();
-    startTime = null;
-    errors = 0;
-    totalChars = 0;
-    document.getElementById('inputArea').value = '';
-    resetStats();
-    document.getElementById('results').classList.remove('show');
-    displayText();
+    document.getElementById('score').textContent = score.toFixed(2);
 }
 
 function resetStats() {
@@ -271,70 +454,98 @@ function resetStats() {
     document.getElementById('score').textContent = '0';
 }
 
-function saveResults(time, ppm, accuracy, score) {
-    document.getElementById('loadingOverlay').classList.add('show');
-    document.querySelector('.loading-overlay p').textContent = 'Guardando...';
+// ============================================
+// 🏁 FINALIZACIÓN DEL TEST
+// ============================================
+
+function finishTest() {
+    console.log('🏁 Test finalizado!');
     
-    const data = {
-        timestamp: new Date().toISOString(),
-        id_empleado: currentUser.id,
-        nombre: currentUser.name,
-        nivel: currentLevel,
-        tiempo_segundos: time,
-        ppm: ppm,
-        precision: accuracy,
-        errores: errors,
-        puntaje: score,
-        texto_palabras: currentText.split(' ').length
-    };
+    stopTest();
     
-    fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(() => document.getElementById('loadingOverlay').classList.remove('show'))
-    .catch(() => document.getElementById('loadingOverlay').classList.remove('show'));
+    const elapsed = (Date.now() - startTime) / 1000;
+    
+    // Calcular métricas finales
+    const wordsTyped = totalChars / 5;
+    const minutes = elapsed / 60;
+    const ppm = Math.round(wordsTyped / minutes);
+    const accuracy = ((totalChars - errors) / totalChars * 100);
+    const score = ppm * (accuracy / 100);
+    
+    console.log('📊 Resultados:', { ppm, accuracy, score, errors });
+    
+    // Mostrar resultados
+    displayResults(elapsed, ppm, accuracy, score);
+    
+    // Guardar en Google Sheets
+    saveResults(elapsed, ppm, accuracy, score);
 }
 
-function showResults(time, ppm, accuracy, score) {
+function displayResults(time, ppm, accuracy, score) {
     const target = LEVEL_TARGETS[currentLevel];
-    const metPPM = ppm >= target.ppm;
-    const metAccuracy = accuracy >= target.accuracy;
-    const passedLevel = metPPM && metAccuracy;
     const quartile = calculateQuartile(score, currentLevel);
     
-    document.getElementById('results').innerHTML = `
-        <h2>${passedLevel ? '🎉 ¡Excelente!' : '💪 Sigue practicando'}</h2>
-        <div class="results-grid">
-            <div class="result-item">
-                <strong>⏱️ Tiempo</strong>
-                <div class="value">${time}s</div>
+    const resultsDiv = document.getElementById('results');
+    
+    // Determinar si cumplió la meta
+    const metPPM = ppm >= target.ppm;
+    const metAccuracy = accuracy >= target.accuracy;
+    const metGoal = metPPM && metAccuracy;
+    
+    resultsDiv.innerHTML = `
+        <div class="results-card ${metGoal ? 'success' : 'warning'}">
+            <h2>🎯 Resultados del Test</h2>
+            
+            <div class="results-grid">
+                <div class="result-item">
+                    <span class="result-label">⏱️ Tiempo Total:</span>
+                    <span class="result-value">${time.toFixed(1)}s</span>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">⚡ PPM:</span>
+                    <span class="result-value ${metPPM ? 'success' : 'warning'}">${ppm}</span>
+                    <span class="result-meta">(Meta: ${target.ppm}+)</span>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">🎯 Precisión:</span>
+                    <span class="result-value ${metAccuracy ? 'success' : 'warning'}">${accuracy.toFixed(1)}%</span>
+                    <span class="result-meta">(Meta: ${target.accuracy}%+)</span>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">❌ Errores:</span>
+                    <span class="result-value">${errors}</span>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">📊 Puntaje:</span>
+                    <span class="result-value">${score.toFixed(2)}</span>
+                </div>
+                
+                <div class="result-item quartile-item">
+                    <span class="result-label">🏆 Cuartil:</span>
+                    <span class="quartile-badge ${quartile.class}">${quartile.label}</span>
+                    <span class="quartile-description">${quartile.description}</span>
+                </div>
             </div>
-            <div class="result-item">
-                <strong>⚡ PPM</strong>
-                <div class="value" style="color: ${metPPM ? '#4CAF50' : '#f44336'}">${ppm}</div>
-                <small>${metPPM ? '✅' : '❌'} Meta: ${target.ppm}+</small>
+            
+            <div class="result-message ${metGoal ? 'success' : 'warning'}">
+                ${metGoal ? 
+                    '🎉 ¡Felicitaciones! Has cumplido la meta del nivel.' : 
+                    '💪 Sigue practicando para alcanzar la meta del nivel.'}
             </div>
-            <div class="result-item">
-                <strong>🎯 Precision</strong>
-                <div class="value" style="color: ${metAccuracy ? '#4CAF50' : '#f44336'}">${accuracy}%</div>
-                <small>${metAccuracy ? '✅' : '❌'} Meta: ${target.accuracy}%+</small>
-            </div>
-            <div class="result-item">
-                <strong>📊 Puntaje</strong>
-                <div class="value">${score}</div>
-            </div>
-        </div>
-        <div class="quartile-info">
-            <h3>📍 Tu Ubicacion</h3>
-            <div class="quartile-badge ${quartile.class}">${quartile.label}</div>
-            <p>${quartile.description}</p>
         </div>
     `;
-    document.getElementById('results').classList.add('show');
+    
+    // Scroll a resultados
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
+
+// ============================================
+// 🏆 CÁLCULO DE CUARTILES
+// ============================================
 
 function calculateQuartile(score, level) {
     const ranges = {
@@ -345,23 +556,153 @@ function calculateQuartile(score, level) {
     
     const range = ranges[level];
     
-    if (score >= range.q1) return { label: 'Q1 - Top Performer', class: 'q1', description: '¡Excelente! Top 25%' };
-    if (score >= range.q2) return { label: 'Q2 - Competente', class: 'q2', description: 'Buen trabajo!' };
-    if (score >= range.q3) return { label: 'Q3 - En Desarrollo', class: 'q3', description: 'Sigue practicando' };
-    return { label: 'Q4 - Necesita Mejora', class: 'q4', description: 'Practica mas' };
+    if (score >= range.q1) {
+        return { 
+            label: 'Q1 - Top Performer', 
+            class: 'q1', 
+            description: '¡Excelente! Estas en el top 25%' 
+        };
+    }
+    if (score >= range.q2) {
+        return { 
+            label: 'Q2 - Competente', 
+            class: 'q2', 
+            description: 'Buen trabajo! Sigue asi.' 
+        };
+    }
+    if (score >= range.q3) {
+        return { 
+            label: 'Q3 - En Desarrollo', 
+            class: 'q3', 
+            description: 'Sigue practicando para mejorar.' 
+        };
+    }
+    return { 
+        label: 'Q4 - Necesita Mejora', 
+        class: 'q4', 
+        description: 'Practica mas para alcanzar la meta.' 
+    };
 }
 
-window.onload = function() {
-    console.log('✅ Sistema iniciado');
-    document.getElementById('userId').focus();
-};
+// ============================================
+// 💾 GUARDAR RESULTADOS EN GOOGLE SHEETS
+// ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    const inputArea = document.getElementById('inputArea');
-    if (inputArea) {
-        inputArea.addEventListener('paste', function(e) {
-            e.preventDefault();
-            alert('⚠️ No puedes pegar texto');
+function saveResults(time, ppm, accuracy, score) {
+    mostrarLoading('Guardando resultados...');
+    
+    const data = {
+        timestamp: new Date().toISOString(),
+        id_empleado: currentUser.id,
+        nombre: currentUser.name,
+        lider: currentUser.lider,
+        turno: currentUser.turno,
+        nivel: currentLevel,
+        tiempo_segundos: Math.round(time),
+        ppm: ppm,
+        precision: parseFloat(accuracy.toFixed(2)),
+        errores: errors,
+        puntaje: parseFloat(score.toFixed(2)),
+        texto_palabras: currentText.split(' ').length
+    };
+    
+    console.log('💾 Guardando datos:', data);
+    
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        console.log('✅ Datos guardados exitosamente');
+        ocultarLoading();
+        mostrarAlerta('✅ Resultados guardados correctamente!', 'success');
+    })
+    .catch(error => {
+        console.error('❌ Error al guardar:', error);
+        ocultarLoading();
+        mostrarAlerta('⚠️ Error al guardar. Los datos se mostraron pero no se guardaron.', 'warning');
+    });
+}
+
+// ============================================
+// 🎨 FUNCIONES DE UI
+// ============================================
+
+function mostrarLoading(mensaje = 'Cargando...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = overlay.querySelector('p');
+    text.textContent = mensaje;
+    overlay.classList.add('show');
+}
+
+function ocultarLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.classList.remove('show');
+}
+
+function mostrarAlerta(mensaje, tipo = 'info') {
+    // Crear elemento de alerta
+    const alerta = document.createElement('div');
+    alerta.className = `alerta alerta-${tipo}`;
+    alerta.textContent = mensaje;
+    
+    // Agregar al body
+    document.body.appendChild(alerta);
+    
+    // Mostrar con animación
+    setTimeout(() => alerta.classList.add('show'), 10);
+    
+    // Ocultar después de 3 segundos
+    setTimeout(() => {
+        alerta.classList.remove('show');
+        setTimeout(() => alerta.remove(), 300);
+    }, 3000);
+}
+
+// ============================================
+// 🚀 INICIALIZACIÓN
+// ============================================
+
+window.onload = function() {
+    console.log('✅ Sistema de Mecanografia iniciado');
+    console.log('📋 Niveles disponibles:', Object.keys(LEVEL_TEXTS).length);
+    
+    // Focus en input de LDAP
+    const userIdInput = document.getElementById('userId');
+    if (userIdInput) {
+        userIdInput.focus();
+        
+        // Enter para login
+        userIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
         });
     }
-});
+    
+    // Bloquear F12 (DevTools)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12') {
+            e.preventDefault();
+            mostrarAlerta('⚠️ Las herramientas de desarrollo estan deshabilitadas.', 'warning');
+        }
+    });
+    
+    // Bloquear clic derecho
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        mostrarAlerta('⚠️ El menu contextual esta deshabilitado.', 'warning');
+    });
+};
+
+// ============================================
+// 📊 LOGS DE DEPURACIÓN
+// ============================================
+
+console.log('📦 app.js cargado correctamente');
+console.log('🔗 Google Script URL:', GOOGLE_SCRIPT_URL);
+console.log('📚 Niveles configurados:', LEVEL_TARGETS);
