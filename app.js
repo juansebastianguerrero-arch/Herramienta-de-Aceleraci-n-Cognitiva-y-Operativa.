@@ -2,7 +2,7 @@
 // 📋 CONFIGURACIÓN GLOBAL
 // ============================================
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzYkkrc1zyP8BgyvMuGvOH444a1VoyPCAkNWPVL3yMRalpOQBRp2DgbVWGUeNK6oUiIXg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzJIEVMrQoPv_KawZYmCO1C64J2bnBG_Z4YB3vDUzB96GqNwuMT59ePbotkcvG-HXLPFA/exec';
 
 const PRACTICE_TEXTS = {
     1: "En nuestro botiquin de herramientas buscamos que uses cada recurso a tu favor. El proceso consta de cinco pasos esenciales. Primero, el Sondeo: usa todas las herramientas disponibles y revisa la tipificacion. Segundo, la Exploracion: las preguntas son claves para que el usuario llegue a la solucion contigo. Tercero, la Comunicacion: se claro al explicar las razones por las que no excluimos el reclamo. Cuarto, las Recomendaciones: dale consejos al usuario para evitar futuros inconvenientes. Quinto, Asesora su Reputacion: revisa el impacto y destaca su medalla. Nunca cierres el chat apresuradamente.",
