@@ -1,106 +1,206 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- ============================================
+         META TAGS BÁSICOS
+         ============================================ -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Mecanografía - Chat Center</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- ============================================
+         SEO Y DESCRIPCIÓN
+         ============================================ -->
+    <title>Sistema de Mecanografía - Chat Center | Mejora tu Velocidad</title>
+    <meta name="description" content="Sistema profesional de entrenamiento de mecanografía para agentes de chat center. Mejora tu velocidad, precisión y desempeño.">
+    <meta name="keywords" content="mecanografía, typing, chat center, velocidad, precisión, entrenamiento">
+    <meta name="author" content="Chat Center Team">
+    
+    <!-- ============================================
+         FAVICON
+         ============================================ -->
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⌨️</text></svg>">
+    
+    <!-- ============================================
+         FUENTES DE GOOGLE
+         ============================================ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- ============================================
+         ESTILOS
+         ============================================ -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- ============================================
+         CONTAINER PRINCIPAL
+         ============================================ -->
     <div class="container">
-        <!-- HEADER -->
-        <div class="header">
+        
+        <!-- ============================================
+             HEADER
+             ============================================ -->
+        <header class="header">
             <h1>🎯 Sistema de Mecanografía</h1>
             <p>Mejora tu velocidad y precisión en el proceso de atención</p>
-        </div>
+        </header>
 
-        <!-- LOGIN SECTION - SOLO LDAP -->
-        <div class="login-section" id="loginSection">
-            <div class="user-info" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto;">
+        <!-- ============================================
+             SECCIÓN 1: LOGIN
+             ============================================ -->
+        <section class="login-section" id="loginSection">
+            <div class="user-info">
                 <div class="input-group">
-                    <label for="userId">🆔 ID de Usuario (LDAP):</label>
-                    <input type="text" id="userId" placeholder="Ej: jcolmenares" autocomplete="off" style="text-align: center; font-size: 20px; font-weight: 600;">
+                    <label for="userId">
+                        🆔 ID de Usuario (LDAP):
+                    </label>
+                    <input 
+                        type="text" 
+                        id="userId" 
+                        placeholder="Ej: jcolmenares" 
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        maxlength="20"
+                        aria-label="Ingresa tu LDAP"
+                        required
+                    >
                 </div>
             </div>
+            
             <div class="buttons">
-                <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
+                <button 
+                    class="btn-primary" 
+                    onclick="login()"
+                    aria-label="Iniciar sesión"
+                >
+                    Iniciar Sesión
+                </button>
             </div>
+            
             <div class="info-message">
-                <p>💡 <strong>Importante:</strong> Usa tu ID de usuario asignado (todo en minúsculas, sin espacios)</p>
+                <p>
+                    💡 <strong>Importante:</strong> Usa tu ID de usuario asignado (todo en minúsculas, sin espacios ni caracteres especiales)
+                </p>
             </div>
-        </div>
+        </section>
 
-        <!-- LEVEL SELECTION -->
-        <div class="level-selection" id="levelSelection">
+        <!-- ============================================
+             SECCIÓN 2: SELECCIÓN DE NIVEL
+             ============================================ -->
+        <section class="level-selection" id="levelSelection">
             <h2>Selecciona tu Nivel de Práctica</h2>
             
             <div class="levels-grid">
-                <div class="level-card level-1" onclick="selectLevel(1)">
-                    <div class="level-icon">📚</div>
+                <!-- NIVEL 1: FUNDAMENTOS -->
+                <article class="level-card level-1" onclick="selectLevel(1)" role="button" tabindex="0" aria-label="Seleccionar Nivel 1">
+                    <div class="level-icon" aria-hidden="true">📚</div>
                     <h3>Nivel 1</h3>
                     <p class="level-subtitle">Fundamentos del Proceso</p>
+                    
                     <div class="level-description">
-                        <p>Botiquín de herramientas y los 5 pasos esenciales del proceso de atención.</p>
+                        <p>
+                            Botiquín de herramientas y los 5 pasos esenciales del proceso de atención. 
+                            Ideal para comenzar tu entrenamiento.
+                        </p>
                     </div>
+                    
                     <div class="target">
                         <strong>Meta: 40+ PPM</strong>
                         <small>Precisión: 95%+</small>
                     </div>
+                    
                     <div class="level-difficulty">
                         <span class="difficulty-badge easy">Básico</span>
                     </div>
-                </div>
+                </article>
 
-                <div class="level-card level-2" onclick="selectLevel(2)">
-                    <div class="level-icon">🎯</div>
+                <!-- NIVEL 2: INDAGACIÓN -->
+                <article class="level-card level-2" onclick="selectLevel(2)" role="button" tabindex="0" aria-label="Seleccionar Nivel 2">
+                    <div class="level-icon" aria-hidden="true">🎯</div>
                     <h3>Nivel 2</h3>
                     <p class="level-subtitle">Indagación y Empatía</p>
+                    
                     <div class="level-description">
-                        <p>Preguntas clave, frases empáticas y manejo de situaciones con signos de puntuación.</p>
+                        <p>
+                            Preguntas clave, frases empáticas y manejo de situaciones con signos de puntuación. 
+                            Nivel intermedio.
+                        </p>
                     </div>
+                    
                     <div class="target">
                         <strong>Meta: 50+ PPM</strong>
                         <small>Precisión: 96%+</small>
                     </div>
+                    
                     <div class="level-difficulty">
                         <span class="difficulty-badge medium">Intermedio</span>
                     </div>
-                </div>
+                </article>
 
-                <div class="level-card level-3" onclick="selectLevel(3)">
-                    <div class="level-icon">🚀</div>
+                <!-- NIVEL 3: GESTIÓN AVANZADA -->
+                <article class="level-card level-3" onclick="selectLevel(3)" role="button" tabindex="0" aria-label="Seleccionar Nivel 3">
+                    <div class="level-icon" aria-hidden="true">🚀</div>
                     <h3>Nivel 3</h3>
                     <p class="level-subtitle">Gestión de Reputación</p>
+                    
                     <div class="level-description">
-                        <p>Textos técnicos con números, porcentajes y cálculos del programa Recovery Seller.</p>
+                        <p>
+                            Textos técnicos con números, porcentajes y cálculos del programa Recovery Seller. 
+                            Nivel avanzado.
+                        </p>
                     </div>
+                    
                     <div class="target">
                         <strong>Meta: 60+ PPM</strong>
                         <small>Precisión: 97%+</small>
                     </div>
+                    
                     <div class="level-difficulty">
                         <span class="difficulty-badge hard">Avanzado</span>
                     </div>
-                </div>
+                </article>
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary" onclick="logout()">Cerrar Sesión</button>
+                <button 
+                    class="btn-secondary" 
+                    onclick="logout()"
+                    aria-label="Cerrar sesión"
+                >
+                    Cerrar Sesión
+                </button>
             </div>
-        </div>
+        </section>
 
-        <!-- TYPING SECTION -->
-        <div class="typing-section" id="typingSection">
+        <!-- ============================================
+             SECCIÓN 3: TEST DE MECANOGRAFÍA
+             ============================================ -->
+        <section class="typing-section" id="typingSection">
+            
+            <!-- INFO DEL NIVEL ACTUAL -->
             <div class="level-info">
                 <div class="level-info-left">
-                    <span class="level-badge" id="currentLevelBadge"></span>
-                    <span id="levelDescription"></span>
+                    <span class="level-badge" id="currentLevelBadge" aria-label="Nivel actual"></span>
+                    <span id="levelDescription" aria-label="Descripción del nivel"></span>
                 </div>
-                <div id="targetInfo"></div>
+                <div id="targetInfo" aria-label="Meta del nivel"></div>
             </div>
 
-            <div class="text-display" id="textDisplay"></div>
+            <!-- DISPLAY DEL TEXTO -->
+            <div 
+                class="text-display" 
+                id="textDisplay" 
+                role="region" 
+                aria-label="Texto a escribir"
+                aria-live="polite"
+            >
+                <!-- El texto se genera dinámicamente con JavaScript -->
+            </div>
 
+            <!-- ÁREA DE ESCRITURA -->
             <textarea 
                 id="inputArea" 
                 placeholder="Haz clic en 'Iniciar Test' y comienza a escribir..." 
@@ -109,47 +209,103 @@
                 autocomplete="off"
                 autocorrect="off"
                 autocapitalize="off"
+                aria-label="Área de escritura"
+                aria-describedby="levelDescription"
             ></textarea>
 
-            <div class="stats">
+            <!-- ESTADÍSTICAS EN TIEMPO REAL -->
+            <div class="stats" role="region" aria-label="Estadísticas del test">
                 <div class="stat-box">
                     <h3>⏱️ Tiempo</h3>
-                    <div class="value" id="timer">0s</div>
+                    <div class="value" id="timer" aria-live="polite">0s</div>
                 </div>
+                
                 <div class="stat-box">
                     <h3>⚡ PPM</h3>
-                    <div class="value" id="wpm">0</div>
+                    <div class="value" id="wpm" aria-live="polite">0</div>
                 </div>
+                
                 <div class="stat-box">
                     <h3>🎯 Precisión</h3>
-                    <div class="value" id="accuracy">100%</div>
+                    <div class="value" id="accuracy" aria-live="polite">100%</div>
                 </div>
+                
                 <div class="stat-box">
                     <h3>❌ Errores</h3>
-                    <div class="value" id="errors">0</div>
+                    <div class="value" id="errors" aria-live="polite">0</div>
                 </div>
+                
                 <div class="stat-box">
                     <h3>📊 Puntaje</h3>
-                    <div class="value" id="score">0</div>
+                    <div class="value" id="score" aria-live="polite">0</div>
                 </div>
             </div>
 
+            <!-- BOTONES DE CONTROL -->
             <div class="buttons">
-                <button class="btn-primary" id="startBtn" onclick="startTest()">Iniciar Test</button>
-                <button class="btn-secondary" onclick="resetTest()">Reintentar</button>
-                <button class="btn-danger" onclick="backToLevels()">Cambiar Nivel</button>
+                <button 
+                    class="btn-primary" 
+                    id="startBtn" 
+                    onclick="startTest()"
+                    aria-label="Iniciar test de mecanografía"
+                >
+                    Iniciar Test
+                </button>
+                
+                <button 
+                    class="btn-secondary" 
+                    onclick="resetTest()"
+                    aria-label="Reintentar test"
+                >
+                    Reintentar
+                </button>
+                
+                <button 
+                    class="btn-danger" 
+                    onclick="backToLevels()"
+                    aria-label="Volver a selección de niveles"
+                >
+                    Cambiar Nivel
+                </button>
             </div>
 
-            <div class="results" id="results"></div>
-        </div>
+            <!-- RESULTADOS -->
+            <div 
+                id="results" 
+                role="region" 
+                aria-label="Resultados del test"
+                aria-live="assertive"
+            >
+                <!-- Los resultados se generan dinámicamente con JavaScript -->
+            </div>
+        </section>
+
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
+    <!-- ============================================
+         LOADING OVERLAY
+         ============================================ -->
+    <div class="loading-overlay" id="loadingOverlay" role="alert" aria-live="assertive">
+        <div class="loading-spinner" aria-hidden="true"></div>
         <p>Validando LDAP...</p>
     </div>
 
+    <!-- ============================================
+         SCRIPTS
+         ============================================ -->
     <script src="app.js"></script>
+    
+    <!-- ============================================
+         ANALYTICS (Opcional)
+         ============================================ -->
+    <!-- 
+    <script>
+        // Google Analytics o tu sistema de analytics
+        // window.dataLayer = window.dataLayer || [];
+        // function gtag(){dataLayer.push(arguments);}
+        // gtag('js', new Date());
+        // gtag('config', 'TU-ID-DE-ANALYTICS');
+    </script>
+    -->
 </body>
 </html>
