@@ -39,7 +39,7 @@ let errors = 0;
 let totalChars = 0;
 
 // ============================================
-// 🔐 FUNCIONES DE AUTENTICACIÓN CON VALIDACIÓN ESTRICTA
+// 🔐 FUNCIONES DE AUTENTICACIÓN CON VALIDACIÓN OBLIGATORIA
 // ============================================
 
 async function login() {
@@ -50,14 +50,14 @@ async function login() {
     
     // Validación de campos vacíos
     if (!name || !id) {
-        alert('⚠️ Por favor, completa todos los campos\n\n• Nombre Completo\n• ID de Usuario (LDAP)');
+        alert('⚠️ CAMPOS OBLIGATORIOS\n\nDebes completar:\n• Nombre Completo\n• ID de Usuario (LDAP)');
         return;
     }
     
     // Validar formato del nombre (debe tener al menos nombre y apellido)
     const nameWords = name.split(' ').filter(word => word.length > 0);
     if (nameWords.length < 2) {
-        alert('⚠️ Debes ingresar tu nombre completo\n\nEjemplo: Johan Colmenares Rodriguez');
+        alert('⚠️ NOMBRE INCOMPLETO\n\nDebes ingresar tu nombre completo (nombre y apellido)\n\nEjemplo correcto:\nJohan Colmenares Rodriguez');
         document.getElementById('userName').focus();
         return;
     }
@@ -65,14 +65,14 @@ async function login() {
     // Validar formato del ID (solo letras minúsculas y números, sin espacios)
     const idRegex = /^[a-z0-9]+$/;
     if (!idRegex.test(id)) {
-        alert('⚠️ El ID de usuario (LDAP) debe contener:\n\n• Solo letras minusculas\n• Solo numeros\n• Sin espacios\n• Sin caracteres especiales\n\nEjemplo: jcolmenares');
+        alert('⚠️ FORMATO DE ID INCORRECTO\n\nEl ID de usuario (LDAP) debe:\n• Contener solo letras minusculas\n• Contener solo numeros\n• NO tener espacios\n• NO tener caracteres especiales\n\nEjemplo correcto: jcolmenares\nEjemplo incorrecto: JColmenares o j.colmenares');
         document.getElementById('userId').focus();
         return;
     }
     
     // Validar longitud mínima del ID
     if (id.length < 3) {
-        alert('⚠️ El ID de usuario debe tener al menos 3 caracteres');
+        alert('⚠️ ID MUY CORTO\n\nEl ID de usuario debe tener al menos 3 caracteres');
         document.getElementById('userId').focus();
         return;
     }
@@ -88,7 +88,7 @@ async function login() {
         document.getElementById('loadingOverlay').classList.remove('show');
         
         if (!isValid) {
-            alert('❌ ACCESO DENEGADO\n\nEl usuario no existe en el sistema o los datos no coinciden.\n\nVerifica:\n• Tu ID de usuario (LDAP)\n• Tu nombre completo\n\nSi el problema persiste, contacta al administrador.');
+            alert('❌ ACCESO DENEGADO\n\nEl usuario NO existe en el sistema o los datos no coinciden.\n\nVerifica:\n• Tu ID de usuario (LDAP) en minusculas\n• Tu nombre completo exacto\n\nSi el problema persiste, contacta al administrador.');
             document.getElementById('userId').focus();
             return;
         }
@@ -105,18 +105,18 @@ async function login() {
         
         // Mensaje de bienvenida
         setTimeout(() => {
-            alert(`✅ Bienvenido/a ${name.split(' ')[0]}!\n\nSelecciona un nivel para comenzar.`);
+            alert(`✅ BIENVENIDO/A ${name.split(' ')[0].toUpperCase()}!\n\nAcceso concedido.\n\nSelecciona un nivel para comenzar tu practica.`);
         }, 300);
         
     } catch (error) {
         document.getElementById('loadingOverlay').classList.remove('show');
         console.error('❌ Error en validacion:', error);
-        alert('⚠️ Error al validar usuario.\n\nPor favor, intenta nuevamente.\n\nSi el problema persiste, contacta al administrador.');
+        alert('⚠️ ERROR AL VALIDAR USUARIO\n\nNo se pudo conectar con el sistema de validacion.\n\nPor favor:\n1. Verifica tu conexion a internet\n2. Intenta nuevamente\n3. Si el problema persiste, contacta al administrador\n\nCodigo de error: ' + error.message);
     }
 }
 
 // ============================================
-// 🔍 VALIDAR USUARIO CONTRA GOOGLE SHEETS
+// 🔍 VALIDAR USUARIO CONTRA GOOGLE SHEETS (OBLIGATORIO)
 // ============================================
 
 async function validateUser(userId, userName) {
@@ -125,32 +125,44 @@ async function validateUser(userId, userName) {
     // Verificar que la URL esté configurada
     if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
         console.error('❌ URL de Google Apps Script no configurada');
-        // En desarrollo, permitir acceso
-        console.warn('⚠️ MODO DESARROLLO: Validacion omitida');
-        return true;
+        alert('❌ SISTEMA NO CONFIGURADO\n\nEl sistema no esta configurado correctamente.\n\nContacta al administrador del sistema.\n\nCodigo de error: URL_NOT_CONFIGURED');
+        return false;
     }
     
     try {
         // Crear URL con parámetros para validación
         const validationURL = `${GOOGLE_SCRIPT_URL}?action=validate&userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
         
+        console.log('📤 Enviando peticion de validacion...');
+        
         const response = await fetch(validationURL, {
             method: 'GET',
-            mode: 'cors'
+            mode: 'cors',
+            cache: 'no-cache'
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const data = await response.json();
         
         console.log('📥 Respuesta de validacion:', data);
         
-        return data.valid === true;
+        if (data.valid === true) {
+            console.log('✅ Usuario validado correctamente');
+            return true;
+        } else {
+            console.log('❌ Usuario no valido:', data.message);
+            return false;
+        }
         
     } catch (error) {
         console.error('❌ Error en fetch de validacion:', error);
         
-        // Si hay error de red, permitir acceso temporal
-        console.warn('⚠️ Error de red - Permitiendo acceso temporal');
-        return true;
+        // BLOQUEAR ACCESO SI HAY ERROR
+        alert('❌ ERROR DE CONEXION\n\nNo se pudo validar tu usuario.\n\nVerifica:\n1. Tu conexion a internet\n2. Que el sistema este configurado correctamente\n\nContacta al administrador si el problema persiste.\n\nError tecnico: ' + error.message);
+        return false;
     }
 }
 
@@ -243,19 +255,27 @@ function displayText() {
 }
 
 // ============================================
-// 🎯 SCROLL AUTOMÁTICO
+// 🎯 SCROLL AUTOMÁTICO MEJORADO
 // ============================================
 
 function scrollToCurrentChar() {
     const currentChar = document.querySelector('.char.current');
     if (currentChar) {
         const textDisplay = document.getElementById('textDisplay');
-        const charRect = currentChar.getBoundingClientRect();
-        const displayRect = textDisplay.getBoundingClientRect();
         
-        // Si el carácter está fuera de la vista, hacer scroll
-        if (charRect.top < displayRect.top || charRect.bottom > displayRect.bottom) {
-            currentChar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Calcular la posición del carácter dentro del contenedor
+        const charTop = currentChar.offsetTop;
+        const displayHeight = textDisplay.clientHeight;
+        const scrollTop = textDisplay.scrollTop;
+        
+        // Si el carácter está fuera de la vista visible
+        if (charTop < scrollTop + 20 || charTop > scrollTop + displayHeight - 60) {
+            // Hacer scroll suave para mantener el carácter visible
+            const targetScroll = charTop - (displayHeight / 2) + 20;
+            textDisplay.scrollTo({
+                top: targetScroll,
+                behavior: 'smooth'
+            });
         }
     }
 }
@@ -438,7 +458,7 @@ function saveResults(time, ppm, accuracy, score) {
     if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
         console.error('❌ URL de Google Apps Script no configurada');
         document.getElementById('loadingOverlay').classList.remove('show');
-        alert('⚠️ Sistema no configurado. Contacta al administrador.');
+        alert('⚠️ Sistema no configurado. Los resultados no se guardaran. Contacta al administrador.');
         return;
     }
     
@@ -530,14 +550,13 @@ function showResults(time, ppm, accuracy, score) {
 
 function calculateQuartile(score, level) {
     const ranges = {
-        1: { q1: 45, q2: 38, q3: 30 },  // INVERTIDO
-        2: { q1: 55, q2: 48, q3: 40 },  // INVERTIDO
-        3: { q1: 65, q2: 58, q3: 50 }   // INVERTIDO
+        1: { q1: 45, q2: 38, q3: 30 },
+        2: { q1: 55, q2: 48, q3: 40 },
+        3: { q1: 65, q2: 58, q3: 50 }
     };
     
     const range = ranges[level];
     
-    // Q1 = MEJOR (puntaje más alto)
     if (score >= range.q1) {
         return {
             label: 'Q1 - Top Performer',
@@ -545,7 +564,6 @@ function calculateQuartile(score, level) {
             description: '¡Excelente! Estas en el 25% superior. Eres un referente del equipo. ¡Felicitaciones!'
         };
     } 
-    // Q2 = BUENO
     else if (score >= range.q2) {
         return {
             label: 'Q2 - Competente',
@@ -553,7 +571,6 @@ function calculateQuartile(score, level) {
             description: '¡Buen trabajo! Estas por encima del promedio. Sigue practicando para llegar al nivel experto.'
         };
     } 
-    // Q3 = REGULAR
     else if (score >= range.q3) {
         return {
             label: 'Q3 - En Desarrollo',
@@ -561,7 +578,6 @@ function calculateQuartile(score, level) {
             description: 'Estas en el promedio. Con practica constante alcanzaras mejores resultados. ¡Vas por buen camino!'
         };
     } 
-    // Q4 = NECESITA MEJORAR (puntaje más bajo)
     else {
         return {
             label: 'Q4 - Necesita Mejora',
@@ -594,7 +610,7 @@ window.onload = function() {
     
     if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
         console.warn('⚠️ ADVERTENCIA: URL de Google Apps Script no configurada');
-        console.warn('⚠️ Los resultados NO se guardaran hasta que configures la URL');
+        console.warn('⚠️ El sistema NO funcionara hasta que configures la URL');
     } else {
         console.log('✅ URL de Google Apps Script configurada');
     }
@@ -622,22 +638,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('keydown', function(e) {
-    // Bloquear F12 (DevTools)
     if (e.key === 'F12') {
         e.preventDefault();
         console.log('🚫 F12 bloqueado');
     }
     
-    // Bloquear Ctrl+Shift+I (DevTools)
     if (e.ctrlKey && e.shiftKey && e.key === 'I') {
         e.preventDefault();
         console.log('🚫 Ctrl+Shift+I bloqueado');
     }
 });
-
-// ============================================
-// 📱 RESPONSIVE HELPERS
-// ============================================
 
 function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -648,10 +658,6 @@ if (isMobile()) {
 } else {
     console.log('💻 Dispositivo de escritorio detectado');
 }
-
-// ============================================
-// 🎯 EXPORT (para testing)
-// ============================================
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
