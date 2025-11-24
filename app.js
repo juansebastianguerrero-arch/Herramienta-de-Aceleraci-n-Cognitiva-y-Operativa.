@@ -29,6 +29,13 @@ let errors = 0;
 let totalChars = 0;
 let currentCharIndex = 0;
 
+// NUEVAS VARIABLES PARA MÉTRICAS AVANZADAS
+let firstCharTime = null;
+let lastKeyTime = null;
+let pausasLargas = 0;
+let correcciones = 0;
+let tiemposSinPausa = [];
+
 // ============================================
 // 🔐 SISTEMA DE LOGIN
 // ============================================
@@ -36,7 +43,6 @@ let currentCharIndex = 0;
 function login() {
     const id = document.getElementById('userId').value.trim().toLowerCase();
     
-    // Validaciones
     if (!id) {
         mostrarAlerta('⚠️ Debes ingresar tu LDAP', 'warning');
         return;
@@ -54,10 +60,7 @@ function login() {
         return;
     }
     
-    // Mostrar loading
     mostrarLoading('Validando LDAP...');
-    
-    // Validar con JSONP
     validateLDAPWithJSONP(id);
 }
 
@@ -70,7 +73,6 @@ function validateLDAPWithJSONP(ldap) {
         console.log('📥 Respuesta LDAP:', response);
         
         if (response.exists) {
-            // Usuario válido
             currentUser = {
                 id: ldap,
                 name: response.nombre,
@@ -81,7 +83,6 @@ function validateLDAPWithJSONP(ldap) {
             
             console.log('✅ Usuario autenticado:', currentUser);
             
-            // Mostrar selección de niveles
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('levelSelection').classList.add('active');
             
@@ -91,13 +92,11 @@ function validateLDAPWithJSONP(ldap) {
             document.getElementById('userId').focus();
         }
         
-        // Limpiar callback
         delete window[callbackName];
         const script = document.querySelector(`script[src*="${callbackName}"]`);
         if (script) script.remove();
     };
     
-    // Crear script tag
     const script = document.createElement('script');
     script.src = `${GOOGLE_SCRIPT_URL}?action=checkUser&ldap=${encodeURIComponent(ldap)}&callback=${callbackName}`;
     script.onerror = function() {
@@ -138,20 +137,13 @@ function selectLevel(level) {
     console.log(`📚 Nivel ${level} seleccionado`);
     console.log(`📝 Texto: ${currentText.length} caracteres`);
     
-    // Cambiar vista
     document.getElementById('levelSelection').classList.remove('active');
     document.getElementById('typingSection').classList.add('active');
     
-    // Actualizar información del nivel
     updateLevelInfo();
-    
-    // Mostrar texto
     displayText();
-    
-    // Resetear estadísticas
     resetStats();
     
-    // Focus en el botón de inicio
     document.getElementById('startBtn').focus();
 }
 
@@ -174,7 +166,6 @@ function updateLevelInfo() {
     
     badge.textContent = target.name;
     
-    // Color según nivel
     if (currentLevel === 1) badge.style.background = 'linear-gradient(135deg, #4CAF50, #66bb6a)';
     if (currentLevel === 2) badge.style.background = 'linear-gradient(135deg, #FF9800, #ffb74d)';
     if (currentLevel === 3) badge.style.background = 'linear-gradient(135deg, #f44336, #ef5350)';
@@ -190,7 +181,6 @@ function displayText() {
         return `<span class="char" id="char-${index}">${char === ' ' ? '&nbsp;' : char}</span>`;
     }).join('');
     
-    // Agregar barra de progreso
     const progressBar = document.createElement('div');
     progressBar.className = 'progress-indicator';
     progressBar.id = 'progressBar';
@@ -212,22 +202,25 @@ function startTest() {
     totalChars = 0;
     currentCharIndex = 0;
     
-    // Habilitar textarea
+    // RESETEAR MÉTRICAS AVANZADAS
+    firstCharTime = null;
+    lastKeyTime = null;
+    pausasLargas = 0;
+    correcciones = 0;
+    tiemposSinPausa = [];
+    
     const inputArea = document.getElementById('inputArea');
     inputArea.disabled = false;
     inputArea.value = '';
     inputArea.placeholder = 'Comienza a escribir...';
     inputArea.focus();
     
-    // Cambiar botón
     const startBtn = document.getElementById('startBtn');
     startBtn.textContent = 'Test en Progreso...';
     startBtn.disabled = true;
     
-    // Iniciar cronómetro
     timerInterval = setInterval(updateTimer, 100);
     
-    // Resaltar primer carácter
     document.getElementById('char-0').classList.add('current');
     
     mostrarAlerta('✅ Test iniciado! Escribe con precision.', 'success');
@@ -241,11 +234,9 @@ function stopTest() {
     isTestActive = false;
     clearInterval(timerInterval);
     
-    // Deshabilitar textarea
     const inputArea = document.getElementById('inputArea');
     inputArea.disabled = true;
     
-    // Restaurar botón
     const startBtn = document.getElementById('startBtn');
     startBtn.textContent = 'Iniciar Test';
     startBtn.disabled = false;
@@ -254,50 +245,57 @@ function stopTest() {
 function resetTest() {
     stopTest();
     
-    // Limpiar textarea
     document.getElementById('inputArea').value = '';
     document.getElementById('inputArea').disabled = true;
     
-    // Resetear estadísticas
     resetStats();
     
-    // Limpiar resultados
     document.getElementById('results').innerHTML = '';
     document.getElementById('results').classList.remove('show');
     
-    // Resetear display
     if (currentText) {
         displayText();
     }
+    
+    // Resetear métricas avanzadas
+    firstCharTime = null;
+    lastKeyTime = null;
+    pausasLargas = 0;
+    correcciones = 0;
+    tiemposSinPausa = [];
     
     console.log('🔄 Test reseteado');
 }
 
 // ============================================
-// ⌨️ MANEJO DE ESCRITURA
+// ⌨️ MANEJO DE ESCRITURA CON MÉTRICAS AVANZADAS
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
     const inputArea = document.getElementById('inputArea');
     
     if (inputArea) {
-        // Bloquear pegado
         inputArea.addEventListener('paste', function(e) {
             e.preventDefault();
             mostrarAlerta('⚠️ No puedes pegar texto. Debes escribir manualmente.', 'warning');
         });
         
-        // Manejar input
         inputArea.addEventListener('input', handleInput);
         
-        // Bloquear copiar
         inputArea.addEventListener('copy', function(e) {
             e.preventDefault();
         });
         
-        // Bloquear cortar
         inputArea.addEventListener('cut', function(e) {
             e.preventDefault();
+        });
+        
+        // NUEVO: Detectar backspace (correcciones)
+        inputArea.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && isTestActive) {
+                correcciones++;
+                console.log('⌫ Corrección detectada. Total:', correcciones);
+            }
         });
     }
 });
@@ -307,6 +305,29 @@ function handleInput(e) {
     
     const inputText = e.target.value;
     const inputLength = inputText.length;
+    const now = Date.now();
+    
+    // CAPTURAR TIEMPO DEL PRIMER CARÁCTER
+    if (inputLength === 1 && !firstCharTime) {
+        firstCharTime = now - startTime;
+        console.log('⏱️ Tiempo 1er carácter:', firstCharTime, 'ms');
+    }
+    
+    // DETECTAR PAUSAS LARGAS (>2 segundos)
+    if (lastKeyTime && (now - lastKeyTime) > 2000) {
+        pausasLargas++;
+        console.log('⏸️ Pausa larga detectada. Total:', pausasLargas);
+    }
+    
+    // REGISTRAR TIEMPO ENTRE TECLAS (para velocidad sostenida)
+    if (lastKeyTime) {
+        const tiempoEntreTeclas = now - lastKeyTime;
+        if (tiempoEntreTeclas < 2000) { // Solo si no es pausa larga
+            tiemposSinPausa.push(tiempoEntreTeclas);
+        }
+    }
+    
+    lastKeyTime = now;
     
     // Actualizar progreso
     updateProgress(inputLength);
@@ -316,36 +337,28 @@ function handleInput(e) {
         const charElement = document.getElementById(`char-${i}`);
         
         if (i < inputLength) {
-            // Carácter ya escrito
             if (inputText[i] === currentText[i]) {
                 charElement.className = 'char correct';
             } else {
                 charElement.className = 'char incorrect';
-                // Contar error solo una vez
                 if (i === inputLength - 1 && !charElement.dataset.errorCounted) {
                     errors++;
                     charElement.dataset.errorCounted = 'true';
                 }
             }
         } else if (i === inputLength) {
-            // Carácter actual (cursor)
             charElement.className = 'char current';
             currentCharIndex = i;
-            
-            // Scroll automático inteligente
             scrollToCurrentChar(charElement);
         } else {
-            // Caracteres pendientes
             charElement.className = 'char';
             delete charElement.dataset.errorCounted;
         }
     }
     
-    // Actualizar estadísticas
     totalChars = inputLength;
     updateStats();
     
-    // Verificar si terminó
     if (inputLength === currentText.length) {
         finishTest();
     }
@@ -360,16 +373,12 @@ function scrollToCurrentChar(charElement) {
     
     if (!charElement || !display) return;
     
-    // Obtener posiciones
     const charTop = charElement.offsetTop;
-    const charHeight = charElement.offsetHeight;
     const displayHeight = display.clientHeight;
     const currentScroll = display.scrollTop;
     
-    // Calcular scroll objetivo (mantener cursor en el tercio superior)
     const targetScroll = charTop - (displayHeight / 3);
     
-    // Solo hacer scroll si es necesario
     if (charTop < currentScroll + 50 || charTop > currentScroll + displayHeight - 50) {
         display.scrollTo({
             top: Math.max(0, targetScroll),
@@ -377,17 +386,14 @@ function scrollToCurrentChar(charElement) {
         });
     }
     
-    // Resaltar línea actual
     highlightCurrentLine();
 }
 
 function highlightCurrentLine() {
-    // Remover highlight anterior
     document.querySelectorAll('.line-highlight').forEach(el => {
         el.classList.remove('line-highlight');
     });
     
-    // Encontrar inicio y fin de palabra actual
     let lineStart = currentCharIndex;
     while (lineStart > 0 && currentText[lineStart - 1] !== ' ') {
         lineStart--;
@@ -398,7 +404,6 @@ function highlightCurrentLine() {
         lineEnd++;
     }
     
-    // Aplicar highlight a la palabra actual
     for (let i = lineStart; i <= lineEnd && i < currentText.length; i++) {
         const char = document.getElementById(`char-${i}`);
         if (char && !char.classList.contains('correct') && !char.classList.contains('incorrect')) {
@@ -431,18 +436,14 @@ function updateStats() {
     
     const elapsed = (Date.now() - startTime) / 1000;
     
-    // Calcular PPM (Palabras Por Minuto)
     const wordsTyped = totalChars / 5;
     const minutes = elapsed / 60;
     const ppm = minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
     
-    // Calcular precisión
     const accuracy = totalChars > 0 ? ((totalChars - errors) / totalChars * 100) : 100;
     
-    // Calcular puntaje
     const score = ppm * (accuracy / 100);
     
-    // Actualizar UI
     document.getElementById('wpm').textContent = ppm;
     document.getElementById('accuracy').textContent = accuracy.toFixed(1) + '%';
     document.getElementById('errors').textContent = errors;
@@ -458,7 +459,7 @@ function resetStats() {
 }
 
 // ============================================
-// 🏁 FINALIZACIÓN DEL TEST
+// 🏁 FINALIZACIÓN CON GUARDADO AUTOMÁTICO
 // ============================================
 
 function finishTest() {
@@ -475,27 +476,118 @@ function finishTest() {
     const accuracy = ((totalChars - errors) / totalChars * 100);
     const score = ppm * (accuracy / 100);
     
-    console.log('📊 Resultados:', { ppm, accuracy, score, errors });
+    // CALCULAR VELOCIDAD SOSTENIDA (sin pausas)
+    let velocidadSostenida = ppm;
+    if (tiemposSinPausa.length > 0) {
+        const promedioEntreTeclas = tiemposSinPausa.reduce((a, b) => a + b, 0) / tiemposSinPausa.length;
+        const charsPerSecond = 1000 / promedioEntreTeclas;
+        const wordsPerSecond = charsPerSecond / 5;
+        velocidadSostenida = Math.round(wordsPerSecond * 60);
+    }
     
-    // Guardar datos temporalmente
+    console.log('📊 Resultados finales:');
+    console.log('  - PPM:', ppm);
+    console.log('  - Precisión:', accuracy.toFixed(2) + '%');
+    console.log('  - Puntaje:', score.toFixed(2));
+    console.log('  - Errores:', errors);
+    console.log('  - Tiempo 1er char:', firstCharTime, 'ms');
+    console.log('  - Pausas largas:', pausasLargas);
+    console.log('  - Velocidad sostenida:', velocidadSostenida);
+    console.log('  - Correcciones:', correcciones);
+    
     window.lastTestResults = {
         time: elapsed,
         ppm: ppm,
         accuracy: accuracy,
-        score: score
+        score: score,
+        firstCharTime: firstCharTime || 0,
+        pausasLargas: pausasLargas,
+        velocidadSostenida: velocidadSostenida,
+        correcciones: correcciones
     };
     
-    // Mostrar resultados CON BOTÓN
-    displayResultsWithButton(elapsed, ppm, accuracy, score);
+    // GUARDADO AUTOMÁTICO
+    mostrarLoading('Guardando resultados automáticamente...');
+    guardarAutomaticamente();
 }
 
-function displayResultsWithButton(time, ppm, accuracy, score) {
+// ============================================
+// 💾 GUARDADO AUTOMÁTICO (SIN BOTÓN)
+// ============================================
+
+function guardarAutomaticamente() {
+    const results = window.lastTestResults;
+    
+    const data = {
+        timestamp: new Date().toISOString(),
+        id_empleado: currentUser.id,
+        nombre: currentUser.name,
+        lider: currentUser.lider,
+        turno: currentUser.turno,
+        nivel: currentLevel,
+        tiempo_segundos: Math.round(results.time),
+        ppm: results.ppm,
+        precision: parseFloat(results.accuracy.toFixed(2)),
+        errores: errors,
+        puntaje: parseFloat(results.score.toFixed(2)),
+        texto_palabras: currentText.split(' ').length,
+        tiempo_primer_caracter: results.firstCharTime,
+        pausas_largas: results.pausasLargas,
+        velocidad_sostenida: results.velocidadSostenida,
+        correcciones: results.correcciones
+    };
+    
+    console.log('💾 Guardando automáticamente:', data);
+    
+    // Crear formulario oculto
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GOOGLE_SCRIPT_URL;
+    form.target = 'hidden_iframe';
+    form.style.display = 'none';
+    
+    Object.keys(data).forEach(key => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = data[key];
+        form.appendChild(input);
+    });
+    
+    let iframe = document.getElementById('hidden_iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = 'hidden_iframe';
+        iframe.id = 'hidden_iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    
+    iframe.onload = function() {
+        setTimeout(() => {
+            ocultarLoading();
+            displayResultsAfterSave(results.time, results.ppm, results.accuracy, results.score);
+            mostrarAlerta('✅ Resultados guardados automáticamente!', 'success');
+            
+            if (document.body.contains(form)) {
+                document.body.removeChild(form);
+            }
+        }, 2000);
+    };
+    
+    document.body.appendChild(form);
+    form.submit();
+    
+    console.log('📤 Datos enviados automáticamente');
+}
+
+function displayResultsAfterSave(time, ppm, accuracy, score) {
     const target = LEVEL_TARGETS[currentLevel];
     const quartile = calculateQuartile(score, currentLevel);
+    const results = window.lastTestResults;
     
     const resultsDiv = document.getElementById('results');
     
-    // Determinar si cumplió la meta
     const metPPM = ppm >= target.ppm;
     const metAccuracy = accuracy >= target.accuracy;
     const metGoal = metPPM && metAccuracy;
@@ -539,135 +631,48 @@ function displayResultsWithButton(time, ppm, accuracy, score) {
                 </div>
             </div>
             
+            <!-- MÉTRICAS AVANZADAS -->
+            <div class="advanced-metrics">
+                <h3>📈 Métricas Avanzadas</h3>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-icon">⚡</span>
+                        <span class="metric-label">Tiempo 1er Carácter:</span>
+                        <span class="metric-value">${(results.firstCharTime / 1000).toFixed(2)}s</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-icon">⏸️</span>
+                        <span class="metric-label">Pausas Largas:</span>
+                        <span class="metric-value">${results.pausasLargas}</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-icon">🚀</span>
+                        <span class="metric-label">Velocidad Sostenida:</span>
+                        <span class="metric-value">${results.velocidadSostenida} PPM</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-icon">⌫</span>
+                        <span class="metric-label">Correcciones:</span>
+                        <span class="metric-value">${results.correcciones}</span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="result-message ${metGoal ? 'success' : 'warning'}">
                 ${metGoal ? 
                     '🎉 ¡Felicitaciones! Has cumplido la meta del nivel.' : 
                     '💪 Sigue practicando para alcanzar la meta del nivel.'}
             </div>
             
-            <!-- BOTÓN PARA ENVIAR DATOS -->
-            <div class="send-data-section">
-                <button class="btn-primary btn-large pulse-animation" onclick="enviarDatosASheets()" id="btnEnviarDatos">
-                    📊 Guardar Resultados en Google Sheets
-                </button>
-                <p class="info-text">
-                    <span class="icon-info">ℹ️</span>
-                    Haz clic para guardar tus resultados y compararlos con otros usuarios
-                </p>
+            <div class="save-confirmation">
+                <p>✅ Tus resultados han sido guardados automáticamente</p>
+                <small>Los datos están disponibles en Google Sheets para análisis</small>
             </div>
         </div>
     `;
     
     resultsDiv.classList.add('show');
-    
-    // Scroll a resultados
     resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-// ============================================
-// 📊 ENVIAR DATOS A GOOGLE SHEETS (MÉTODO GARANTIZADO)
-// ============================================
-
-function enviarDatosASheets() {
-    const btn = document.getElementById('btnEnviarDatos');
-    btn.disabled = true;
-    btn.classList.remove('pulse-animation');
-    btn.innerHTML = '<span class="spinner"></span> Enviando...';
-    
-    const results = window.lastTestResults;
-    
-    if (!results) {
-        mostrarAlerta('❌ No hay datos para enviar', 'error');
-        btn.disabled = false;
-        btn.innerHTML = '📊 Guardar Resultados en Google Sheets';
-        return;
-    }
-    
-    mostrarLoading('Guardando resultados en Google Sheets...');
-    
-    const data = {
-        timestamp: new Date().toISOString(),
-        id_empleado: currentUser.id,
-        nombre: currentUser.name,
-        lider: currentUser.lider,
-        turno: currentUser.turno,
-        nivel: currentLevel,
-        tiempo_segundos: Math.round(results.time),
-        ppm: results.ppm,
-        precision: parseFloat(results.accuracy.toFixed(2)),
-        errores: errors,
-        puntaje: parseFloat(results.score.toFixed(2)),
-        texto_palabras: currentText.split(' ').length
-    };
-    
-    console.log('📤 Enviando datos:', data);
-    console.log('🔗 URL destino:', GOOGLE_SCRIPT_URL);
-    
-    // ============================================
-    // MÉTODO FORM SUBMIT (MÁS CONFIABLE)
-    // ============================================
-    
-    // Crear formulario oculto
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = GOOGLE_SCRIPT_URL;
-    form.target = 'hidden_iframe';
-    form.style.display = 'none';
-    
-    // Agregar campos
-    Object.keys(data).forEach(key => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = data[key];
-        form.appendChild(input);
-    });
-    
-    // Crear iframe oculto para recibir respuesta
-    let iframe = document.getElementById('hidden_iframe');
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.name = 'hidden_iframe';
-        iframe.id = 'hidden_iframe';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-    }
-    
-    // Manejar respuesta del iframe
-    iframe.onload = function() {
-        console.log('✅ Formulario enviado correctamente');
-        
-        // Esperar 2 segundos para que Google Sheets procese
-        setTimeout(() => {
-            ocultarLoading();
-            btn.innerHTML = '✅ Datos Guardados Exitosamente';
-            btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
-            btn.style.cursor = 'default';
-            
-            mostrarAlerta('✅ Resultados guardados correctamente en Google Sheets!', 'success');
-            
-            // Calcular cuartil localmente
-            const quartile = calculateQuartile(data.puntaje, data.nivel);
-            
-            setTimeout(() => {
-                mostrarAlerta(
-                    `🏆 Cuartil: ${quartile.label} | Verifica la hoja "Intentos" en Google Sheets`, 
-                    'info'
-                );
-            }, 1500);
-            
-            // Limpiar formulario
-            if (document.body.contains(form)) {
-                document.body.removeChild(form);
-            }
-        }, 2000);
-    };
-    
-    // Agregar formulario al DOM y enviarlo
-    document.body.appendChild(form);
-    form.submit();
-    
-    console.log('📤 Formulario enviado');
 }
 
 // ============================================
@@ -728,7 +733,6 @@ function ocultarLoading() {
 }
 
 function mostrarAlerta(mensaje, tipo = 'info') {
-    // Crear elemento de alerta
     const alerta = document.createElement('div');
     alerta.className = `alerta alerta-${tipo}`;
     
@@ -744,13 +748,10 @@ function mostrarAlerta(mensaje, tipo = 'info') {
         <span class="alerta-text">${mensaje}</span>
     `;
     
-    // Agregar al body
     document.body.appendChild(alerta);
     
-    // Mostrar con animación
     setTimeout(() => alerta.classList.add('show'), 10);
     
-    // Ocultar después de 4 segundos
     setTimeout(() => {
         alerta.classList.remove('show');
         setTimeout(() => alerta.remove(), 300);
@@ -762,16 +763,15 @@ function mostrarAlerta(mensaje, tipo = 'info') {
 // ============================================
 
 window.onload = function() {
-    console.log('✅ Sistema de Mecanografia iniciado');
+    console.log('✅ Sistema de Mecanografia iniciado - Versión 4.0');
     console.log('🔗 Google Script URL:', GOOGLE_SCRIPT_URL);
     console.log('📋 Niveles disponibles:', Object.keys(LEVEL_TEXTS).length);
+    console.log('📊 Métricas avanzadas: ACTIVADAS');
     
-    // Focus en input de LDAP
     const userIdInput = document.getElementById('userId');
     if (userIdInput) {
         userIdInput.focus();
         
-        // Enter para login
         userIdInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 login();
@@ -779,7 +779,6 @@ window.onload = function() {
         });
     }
     
-    // Bloquear F12 (DevTools)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12') {
             e.preventDefault();
@@ -787,11 +786,10 @@ window.onload = function() {
         }
     });
     
-    // Bloquear clic derecho
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         mostrarAlerta('⚠️ El menu contextual esta deshabilitado.', 'warning');
     });
 };
 
-console.log('📦 app.js cargado correctamente - Versión 3.0 (Form Submit)');
+console.log('📦 app.js cargado - Versión 4.0 (Métricas Avanzadas + Guardado Automático)');
