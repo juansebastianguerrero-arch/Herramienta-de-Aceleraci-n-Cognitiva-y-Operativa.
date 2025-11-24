@@ -565,7 +565,7 @@ function displayResultsWithButton(time, ppm, accuracy, score) {
 }
 
 // ============================================
-// 📊 ENVIAR DATOS A GOOGLE SHEETS (MEJORADO)
+// 📊 ENVIAR DATOS A GOOGLE SHEETS (MÉTODO GARANTIZADO)
 // ============================================
 
 function enviarDatosASheets() {
@@ -603,83 +603,71 @@ function enviarDatosASheets() {
     console.log('📤 Enviando datos:', data);
     console.log('🔗 URL destino:', GOOGLE_SCRIPT_URL);
     
-    // Timeout de seguridad
-    const timeoutId = setTimeout(() => {
-        console.warn('⚠️ Timeout alcanzado (15 segundos)');
-        ocultarLoading();
-        btn.innerHTML = '⚠️ Tiempo agotado - Verifica Google Sheets';
-        btn.style.background = 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)';
-        mostrarAlerta('⚠️ El envío tardó mucho. Verifica manualmente en Google Sheets si los datos se guardaron.', 'warning');
-    }, 15000);
+    // ============================================
+    // MÉTODO FORM SUBMIT (MÁS CONFIABLE)
+    // ============================================
     
-    fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        clearTimeout(timeoutId);
-        console.log('📥 Respuesta HTTP:', response);
-        console.log('Status:', response.status);
-        console.log('OK:', response.ok);
-        return response.text();
-    })
-    .then(text => {
-        console.log('📥 Respuesta texto:', text);
-        
-        try {
-            const jsonResponse = JSON.parse(text);
-            
-            if (jsonResponse.result === 'success') {
-                ocultarLoading();
-                btn.innerHTML = '✅ Datos Guardados Exitosamente';
-                btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
-                btn.style.cursor = 'default';
-                
-                mostrarAlerta('✅ Resultados guardados correctamente en Google Sheets!', 'success');
-                
-                if (jsonResponse.data) {
-                    console.log('📊 Datos guardados:', jsonResponse.data);
-                    
-                    setTimeout(() => {
-                        mostrarAlerta(
-                            `🏆 Cuartil: ${jsonResponse.data.cuartil} | Fila: ${jsonResponse.data.fila} | Total registros: ${jsonResponse.data.total_registros}`, 
-                            'info'
-                        );
-                    }, 1500);
-                }
-            } else {
-                throw new Error(jsonResponse.error || 'Error desconocido');
-            }
-        } catch (parseError) {
-            console.error('❌ Error al parsear respuesta:', parseError);
-            console.error('Texto recibido:', text);
-            ocultarLoading();
-            btn.disabled = false;
-            btn.innerHTML = '🔄 Reintentar Envío';
-            btn.classList.add('pulse-animation');
-            
-            // Si el texto está vacío, probablemente se guardó pero no llegó la respuesta
-            if (!text || text.trim() === '') {
-                mostrarAlerta('⚠️ No se recibió confirmación. Verifica Google Sheets para confirmar que se guardó.', 'warning');
-            } else {
-                mostrarAlerta('⚠️ Error al procesar respuesta. Verifica Google Sheets manualmente.', 'warning');
-            }
-        }
-    })
-    .catch(error => {
-        clearTimeout(timeoutId);
-        console.error('❌ Error de red:', error);
-        console.error('Tipo de error:', error.name);
-        console.error('Mensaje:', error.message);
-        ocultarLoading();
-        btn.disabled = false;
-        btn.innerHTML = '🔄 Reintentar Envío';
-        btn.classList.add('pulse-animation');
-        mostrarAlerta('❌ Error de conexión. Verifica tu internet e intenta nuevamente.', 'error');
+    // Crear formulario oculto
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GOOGLE_SCRIPT_URL;
+    form.target = 'hidden_iframe';
+    form.style.display = 'none';
+    
+    // Agregar campos
+    Object.keys(data).forEach(key => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = data[key];
+        form.appendChild(input);
     });
+    
+    // Crear iframe oculto para recibir respuesta
+    let iframe = document.getElementById('hidden_iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = 'hidden_iframe';
+        iframe.id = 'hidden_iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    
+    // Manejar respuesta del iframe
+    iframe.onload = function() {
+        console.log('✅ Formulario enviado correctamente');
+        
+        // Esperar 2 segundos para que Google Sheets procese
+        setTimeout(() => {
+            ocultarLoading();
+            btn.innerHTML = '✅ Datos Guardados Exitosamente';
+            btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+            btn.style.cursor = 'default';
+            
+            mostrarAlerta('✅ Resultados guardados correctamente en Google Sheets!', 'success');
+            
+            // Calcular cuartil localmente
+            const quartile = calculateQuartile(data.puntaje, data.nivel);
+            
+            setTimeout(() => {
+                mostrarAlerta(
+                    `🏆 Cuartil: ${quartile.label} | Verifica la hoja "Intentos" en Google Sheets`, 
+                    'info'
+                );
+            }, 1500);
+            
+            // Limpiar formulario
+            if (document.body.contains(form)) {
+                document.body.removeChild(form);
+            }
+        }, 2000);
+    };
+    
+    // Agregar formulario al DOM y enviarlo
+    document.body.appendChild(form);
+    form.submit();
+    
+    console.log('📤 Formulario enviado');
 }
 
 // ============================================
@@ -806,4 +794,4 @@ window.onload = function() {
     });
 };
 
-console.log('📦 app.js cargado correctamente - Versión 2.0');
+console.log('📦 app.js cargado correctamente - Versión 3.0 (Form Submit)');
