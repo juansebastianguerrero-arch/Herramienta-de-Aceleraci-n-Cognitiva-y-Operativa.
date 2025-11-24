@@ -2,7 +2,7 @@
 // 📋 CONFIGURACIÓN GLOBAL
 // ============================================
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbxer87HOTOG1NRp7Otvw2c2V-icXZxblxypighclkIRBivTagweLJxU1afV1sehbe6y6w/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbxU1RrFj9Naj20l6pmimKi4PWFWC14DFH6QCGQuiANSy0OER5nWMsuzZG9f9O9s0OW84Q/exec';
 
 const LEVEL_TARGETS = {
     1: { ppm: 40, accuracy: 95, name: "Nivel 1: Fundamentos" },
@@ -66,6 +66,8 @@ function validateLDAPWithJSONP(ldap) {
     
     window[callbackName] = function(response) {
         ocultarLoading();
+        
+        console.log('📥 Respuesta LDAP:', response);
         
         if (response.exists) {
             // Usuario válido
@@ -173,9 +175,9 @@ function updateLevelInfo() {
     badge.textContent = target.name;
     
     // Color según nivel
-    if (currentLevel === 1) badge.style.background = '#4CAF50';
-    if (currentLevel === 2) badge.style.background = '#FF9800';
-    if (currentLevel === 3) badge.style.background = '#f44336';
+    if (currentLevel === 1) badge.style.background = 'linear-gradient(135deg, #4CAF50, #66bb6a)';
+    if (currentLevel === 2) badge.style.background = 'linear-gradient(135deg, #FF9800, #ffb74d)';
+    if (currentLevel === 3) badge.style.background = 'linear-gradient(135deg, #f44336, #ef5350)';
     
     const wordCount = currentText.split(' ').length;
     description.textContent = `${wordCount} palabras | ${currentText.length} caracteres`;
@@ -261,6 +263,7 @@ function resetTest() {
     
     // Limpiar resultados
     document.getElementById('results').innerHTML = '';
+    document.getElementById('results').classList.remove('show');
     
     // Resetear display
     if (currentText) {
@@ -384,14 +387,14 @@ function highlightCurrentLine() {
         el.classList.remove('line-highlight');
     });
     
-    // Encontrar inicio y fin de línea actual
+    // Encontrar inicio y fin de palabra actual
     let lineStart = currentCharIndex;
-    while (lineStart > 0 && currentText[lineStart - 1] !== '\n' && currentText[lineStart - 1] !== ' ') {
+    while (lineStart > 0 && currentText[lineStart - 1] !== ' ') {
         lineStart--;
     }
     
     let lineEnd = currentCharIndex;
-    while (lineEnd < currentText.length && currentText[lineEnd] !== '\n' && currentText[lineEnd] !== ' ') {
+    while (lineEnd < currentText.length && currentText[lineEnd] !== ' ') {
         lineEnd++;
     }
     
@@ -429,7 +432,7 @@ function updateStats() {
     const elapsed = (Date.now() - startTime) / 1000;
     
     // Calcular PPM (Palabras Por Minuto)
-    const wordsTyped = totalChars / 5; // Promedio de 5 caracteres por palabra
+    const wordsTyped = totalChars / 5;
     const minutes = elapsed / 60;
     const ppm = minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
     
@@ -474,14 +477,19 @@ function finishTest() {
     
     console.log('📊 Resultados:', { ppm, accuracy, score, errors });
     
-    // Mostrar resultados
-    displayResults(elapsed, ppm, accuracy, score);
+    // Guardar datos temporalmente
+    window.lastTestResults = {
+        time: elapsed,
+        ppm: ppm,
+        accuracy: accuracy,
+        score: score
+    };
     
-    // Guardar en Google Sheets
-    saveResults(elapsed, ppm, accuracy, score);
+    // Mostrar resultados CON BOTÓN
+    displayResultsWithButton(elapsed, ppm, accuracy, score);
 }
 
-function displayResults(time, ppm, accuracy, score) {
+function displayResultsWithButton(time, ppm, accuracy, score) {
     const target = LEVEL_TARGETS[currentLevel];
     const quartile = calculateQuartile(score, currentLevel);
     
@@ -536,11 +544,117 @@ function displayResults(time, ppm, accuracy, score) {
                     '🎉 ¡Felicitaciones! Has cumplido la meta del nivel.' : 
                     '💪 Sigue practicando para alcanzar la meta del nivel.'}
             </div>
+            
+            <!-- BOTÓN PARA ENVIAR DATOS -->
+            <div class="send-data-section">
+                <button class="btn-primary btn-large pulse-animation" onclick="enviarDatosASheets()" id="btnEnviarDatos">
+                    📊 Guardar Resultados en Google Sheets
+                </button>
+                <p class="info-text">
+                    <span class="icon-info">ℹ️</span>
+                    Haz clic para guardar tus resultados y compararlos con otros usuarios
+                </p>
+            </div>
         </div>
     `;
     
+    resultsDiv.classList.add('show');
+    
     // Scroll a resultados
     resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ============================================
+// 📊 ENVIAR DATOS A GOOGLE SHEETS
+// ============================================
+
+function enviarDatosASheets() {
+    const btn = document.getElementById('btnEnviarDatos');
+    btn.disabled = true;
+    btn.classList.remove('pulse-animation');
+    btn.innerHTML = '<span class="spinner"></span> Enviando...';
+    
+    const results = window.lastTestResults;
+    
+    if (!results) {
+        mostrarAlerta('❌ No hay datos para enviar', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '📊 Guardar Resultados en Google Sheets';
+        return;
+    }
+    
+    mostrarLoading('Guardando resultados en Google Sheets...');
+    
+    const data = {
+        timestamp: new Date().toISOString(),
+        id_empleado: currentUser.id,
+        nombre: currentUser.name,
+        lider: currentUser.lider,
+        turno: currentUser.turno,
+        nivel: currentLevel,
+        tiempo_segundos: Math.round(results.time),
+        ppm: results.ppm,
+        precision: parseFloat(results.accuracy.toFixed(2)),
+        errores: errors,
+        puntaje: parseFloat(results.score.toFixed(2)),
+        texto_palabras: currentText.split(' ').length
+    };
+    
+    console.log('📤 Enviando datos:', data);
+    
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.text())
+    .then(text => {
+        console.log('📥 Respuesta recibida:', text);
+        
+        try {
+            const jsonResponse = JSON.parse(text);
+            
+            if (jsonResponse.result === 'success') {
+                ocultarLoading();
+                btn.innerHTML = '✅ Datos Guardados Exitosamente';
+                btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+                btn.style.cursor = 'default';
+                
+                mostrarAlerta('✅ Resultados guardados correctamente en Google Sheets!', 'success');
+                
+                // Mostrar información adicional
+                if (jsonResponse.data) {
+                    console.log('📊 Datos guardados:', jsonResponse.data);
+                    
+                    setTimeout(() => {
+                        mostrarAlerta(
+                            `🏆 Cuartil: ${jsonResponse.data.cuartil} | Fila: ${jsonResponse.data.fila} | Total registros: ${jsonResponse.data.total_registros}`, 
+                            'info'
+                        );
+                    }, 1500);
+                }
+            } else {
+                throw new Error(jsonResponse.error || 'Error desconocido');
+            }
+        } catch (parseError) {
+            console.error('❌ Error al parsear respuesta:', parseError);
+            ocultarLoading();
+            btn.disabled = false;
+            btn.innerHTML = '🔄 Reintentar Envío';
+            btn.classList.add('pulse-animation');
+            mostrarAlerta('⚠️ Error al procesar respuesta. Verifica Google Sheets manualmente.', 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error al enviar:', error);
+        ocultarLoading();
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Reintentar Envío';
+        btn.classList.add('pulse-animation');
+        mostrarAlerta('❌ Error de conexión. Verifica tu internet e intenta nuevamente.', 'error');
+    });
 }
 
 // ============================================
@@ -585,50 +699,6 @@ function calculateQuartile(score, level) {
 }
 
 // ============================================
-// 💾 GUARDAR RESULTADOS EN GOOGLE SHEETS
-// ============================================
-
-function saveResults(time, ppm, accuracy, score) {
-    mostrarLoading('Guardando resultados...');
-    
-    const data = {
-        timestamp: new Date().toISOString(),
-        id_empleado: currentUser.id,
-        nombre: currentUser.name,
-        lider: currentUser.lider,
-        turno: currentUser.turno,
-        nivel: currentLevel,
-        tiempo_segundos: Math.round(time),
-        ppm: ppm,
-        precision: parseFloat(accuracy.toFixed(2)),
-        errores: errors,
-        puntaje: parseFloat(score.toFixed(2)),
-        texto_palabras: currentText.split(' ').length
-    };
-    
-    console.log('💾 Guardando datos:', data);
-    
-    fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(() => {
-        console.log('✅ Datos guardados exitosamente');
-        ocultarLoading();
-        mostrarAlerta('✅ Resultados guardados correctamente!', 'success');
-    })
-    .catch(error => {
-        console.error('❌ Error al guardar:', error);
-        ocultarLoading();
-        mostrarAlerta('⚠️ Error al guardar. Los datos se mostraron pero no se guardaron.', 'warning');
-    });
-}
-
-// ============================================
 // 🎨 FUNCIONES DE UI
 // ============================================
 
@@ -648,7 +718,18 @@ function mostrarAlerta(mensaje, tipo = 'info') {
     // Crear elemento de alerta
     const alerta = document.createElement('div');
     alerta.className = `alerta alerta-${tipo}`;
-    alerta.textContent = mensaje;
+    
+    const iconos = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    
+    alerta.innerHTML = `
+        <span class="alerta-icon">${iconos[tipo]}</span>
+        <span class="alerta-text">${mensaje}</span>
+    `;
     
     // Agregar al body
     document.body.appendChild(alerta);
@@ -656,11 +737,11 @@ function mostrarAlerta(mensaje, tipo = 'info') {
     // Mostrar con animación
     setTimeout(() => alerta.classList.add('show'), 10);
     
-    // Ocultar después de 3 segundos
+    // Ocultar después de 4 segundos
     setTimeout(() => {
         alerta.classList.remove('show');
         setTimeout(() => alerta.remove(), 300);
-    }, 3000);
+    }, 4000);
 }
 
 // ============================================
@@ -669,6 +750,7 @@ function mostrarAlerta(mensaje, tipo = 'info') {
 
 window.onload = function() {
     console.log('✅ Sistema de Mecanografia iniciado');
+    console.log('🔗 Google Script URL configurada');
     console.log('📋 Niveles disponibles:', Object.keys(LEVEL_TEXTS).length);
     
     // Focus en input de LDAP
@@ -699,10 +781,4 @@ window.onload = function() {
     });
 };
 
-// ============================================
-// 📊 LOGS DE DEPURACIÓN
-// ============================================
-
 console.log('📦 app.js cargado correctamente');
-console.log('🔗 Google Script URL:', GOOGLE_SCRIPT_URL);
-console.log('📚 Niveles configurados:', LEVEL_TARGETS);
