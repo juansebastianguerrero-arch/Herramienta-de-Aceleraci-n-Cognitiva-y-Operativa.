@@ -2,7 +2,7 @@
 // 📋 CONFIGURACIÓN GLOBAL
 // ============================================
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzJIEVMrQoPv_KawZYmCO1C64J2bnBG_Z4YB3vDUzB96GqNwuMT59ePbotkcvG-HXLPFA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbxer87HOTOG1NRp7Otvw2c2V-icXZxblxypighclkIRBivTagweLJxU1afV1sehbe6y6w/exec';
 
 const LEVEL_TARGETS = {
     1: { ppm: 40, accuracy: 95, name: "Nivel 1: Fundamentos" },
