@@ -2,7 +2,7 @@
 // 📋 CONFIGURACIÓN GLOBAL
 // ============================================
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycby09KuBW3a0v16r7GUwJHwjVQa2amXHmJduVExetc0sqpcOHj_p-su9ofqL1cCpZ4O9cA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbzYkkrc1zyP8BgyvMuGvOH444a1VoyPCAkNWPVL3yMRalpOQBRp2DgbVWGUeNK6oUiIXg/exec';
 
 const PRACTICE_TEXTS = {
     1: "En nuestro botiquin de herramientas buscamos que uses cada recurso a tu favor. El proceso consta de cinco pasos esenciales. Primero, el Sondeo: usa todas las herramientas disponibles y revisa la tipificacion. Segundo, la Exploracion: las preguntas son claves para que el usuario llegue a la solucion contigo. Tercero, la Comunicacion: se claro al explicar las razones por las que no excluimos el reclamo. Cuarto, las Recomendaciones: dale consejos al usuario para evitar futuros inconvenientes. Quinto, Asesora su Reputacion: revisa el impacto y destaca su medalla. Nunca cierres el chat apresuradamente.",
@@ -28,141 +28,115 @@ let errors = 0;
 let totalChars = 0;
 
 // ============================================
-// 🔐 LOGIN SOLO CON LDAP (VALIDACIÓN OBLIGATORIA)
+// 🔐 LOGIN SOLO CON LDAP
 // ============================================
 
-async function login() {
+function login() {
     console.log('🔐 Iniciando login...');
     
     const id = document.getElementById('userId').value.trim().toLowerCase();
     
-    // Validar campo vacío
     if (!id) {
         alert('⚠️ CAMPO OBLIGATORIO\n\nDebes ingresar tu LDAP');
-        document.getElementById('userId').focus();
         return;
     }
     
-    // Validar formato (solo letras minúsculas y números)
     const idRegex = /^[a-z0-9]+$/;
     if (!idRegex.test(id)) {
-        alert('⚠️ FORMATO INCORRECTO\n\nEl LDAP debe contener:\n• Solo letras minusculas\n• Solo numeros\n• Sin espacios ni caracteres especiales\n\nEjemplo correcto: jcolmenares\nEjemplo incorrecto: JColmenares o j.colmenares');
+        alert('⚠️ FORMATO INCORRECTO\n\nEl LDAP debe:\n• Solo letras minusculas\n• Solo numeros\n• Sin espacios\n\nEjemplo: jcolmenares');
         document.getElementById('userId').focus();
         return;
     }
     
-    // Validar longitud mínima
     if (id.length < 3) {
-        alert('⚠️ LDAP MUY CORTO\n\nEl LDAP debe tener al menos 3 caracteres');
+        alert('⚠️ LDAP muy corto (minimo 3 caracteres)');
         document.getElementById('userId').focus();
         return;
     }
     
-    // Verificar que la URL esté configurada
     if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-        alert('❌ SISTEMA NO CONFIGURADO\n\nEl sistema no esta conectado a la base de datos.\n\nContacta al administrador.\n\nCodigo: URL_NOT_CONFIGURED');
+        alert('❌ SISTEMA NO CONFIGURADO\n\nContacta al administrador.');
         return;
     }
     
-    // Mostrar loading
     document.getElementById('loadingOverlay').classList.add('show');
     document.querySelector('.loading-overlay p').textContent = 'Validando LDAP...';
     
-    // Validar LDAP contra Google Sheets
-    const userData = await validateLDAP(id);
-    
-    document.getElementById('loadingOverlay').classList.remove('show');
-    
-    if (!userData) {
-        alert('❌ ACCESO DENEGADO\n\nEl LDAP "' + id + '" NO existe en el sistema.\n\nVerifica:\n• Que este escrito correctamente\n• Que este en minusculas\n• Que no tenga espacios\n\nSi el problema persiste, contacta al administrador.');
-        document.getElementById('userId').focus();
-        return;
-    }
-    
-    // Login exitoso
-    currentUser.name = userData.nombre;
-    currentUser.id = id;
-    
-    console.log('✅ Login exitoso:', currentUser);
-    
-    // Cambiar de vista
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('levelSelection').classList.add('active');
-    
-    // Mensaje de bienvenida
-    setTimeout(() => {
-        alert(`✅ BIENVENIDO/A\n\n${userData.nombre}\n\nEquipo: ${userData.lider}\n\nSelecciona un nivel para comenzar.`);
-    }, 300);
+    // Validar usando JSONP (evita problemas de CORS)
+    validateLDAPWithJSONP(id);
 }
 
 // ============================================
-// 🔍 VALIDAR LDAP CONTRA GOOGLE SHEETS
+// 🔍 VALIDAR LDAP CON JSONP (SIN CORS)
 // ============================================
 
-async function validateLDAP(ldap) {
-    console.log('🔍 Validando LDAP:', ldap);
+function validateLDAPWithJSONP(ldap) {
+    console.log('🔍 Validando LDAP con JSONP:', ldap);
     
-    try {
-        const url = `${GOOGLE_SCRIPT_URL}?action=checkUser&ldap=${encodeURIComponent(ldap)}`;
+    // Crear callback único
+    const callbackName = 'ldapCallback_' + Date.now();
+    
+    // Crear función callback global
+    window[callbackName] = function(data) {
+        console.log('📥 Respuesta recibida:', data);
         
-        console.log('📤 Consultando:', url);
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            redirect: 'follow'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const text = await response.text();
-        console.log('📥 Respuesta:', text);
-        
-        const data = JSON.parse(text);
+        document.getElementById('loadingOverlay').classList.remove('show');
         
         if (data.exists === true) {
             console.log('✅ LDAP valido');
-            return {
-                nombre: data.nombre || 'Usuario',
-                lider: data.lider || 'Sin equipo'
-            };
+            
+            currentUser.name = data.nombre || 'Usuario';
+            currentUser.id = ldap;
+            
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('levelSelection').classList.add('active');
+            
+            setTimeout(() => {
+                alert(`✅ BIENVENIDO/A\n\n${currentUser.name}\n\nEquipo: ${data.lider || 'N/A'}`);
+            }, 300);
         } else {
             console.log('❌ LDAP no encontrado');
-            return null;
+            alert('❌ ACCESO DENEGADO\n\nEl LDAP "' + ldap + '" NO existe en el sistema.\n\nVerifica tu LDAP o contacta al administrador.');
+            document.getElementById('userId').focus();
         }
         
-    } catch (error) {
-        console.error('❌ Error en validacion:', error);
-        alert('❌ ERROR DE CONEXION\n\nNo se pudo conectar con el sistema de validacion.\n\nVerifica:\n1. Tu conexion a internet\n2. Que el Google Apps Script este implementado correctamente\n\nError tecnico: ' + error.message);
-        return null;
-    }
+        // Limpiar
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+    
+    // Crear script tag
+    const script = document.createElement('script');
+    script.src = `${GOOGLE_SCRIPT_URL}?action=checkUser&ldap=${encodeURIComponent(ldap)}&callback=${callbackName}`;
+    
+    // Manejar errores
+    script.onerror = function() {
+        console.error('❌ Error al cargar script');
+        document.getElementById('loadingOverlay').classList.remove('show');
+        alert('❌ ERROR DE CONEXION\n\nNo se pudo conectar con el sistema.\n\nVerifica:\n1. Tu conexion a internet\n2. Que el Google Apps Script este implementado como "Cualquier persona"\n\nContacta al administrador si el problema persiste.');
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+    
+    document.body.appendChild(script);
 }
 
 function logout() {
-    if (confirm('¿Seguro que deseas cerrar sesion?')) {
-        console.log('👋 Cerrando sesion...');
-        
+    if (confirm('¿Cerrar sesion?')) {
         currentUser = { name: '', id: '' };
         currentLevel = 0;
-        
         document.getElementById('userId').value = '';
-        
         document.getElementById('loginSection').classList.remove('hidden');
         document.getElementById('levelSelection').classList.remove('active');
         document.getElementById('typingSection').classList.remove('active');
-        
-        console.log('✅ Sesion cerrada');
     }
 }
 
 // ============================================
-// 🎯 FUNCIONES DE SELECCIÓN DE NIVEL
+// 🎯 SELECCIÓN DE NIVEL
 // ============================================
 
 function selectLevel(level) {
-    console.log(`🎯 Nivel seleccionado: ${level}`);
-    
     currentLevel = level;
     currentText = PRACTICE_TEXTS[level];
     
@@ -175,18 +149,10 @@ function selectLevel(level) {
 }
 
 function backToLevels() {
-    if (isTestActive) {
-        if (!confirm('¿Seguro que deseas salir? Perderas tu progreso actual.')) {
-            return;
-        }
-        stopTest();
-    }
-    
-    console.log('🔙 Volviendo a seleccion de niveles...');
-    
+    if (isTestActive && !confirm('¿Salir? Perderas tu progreso.')) return;
+    stopTest();
     document.getElementById('typingSection').classList.remove('active');
     document.getElementById('levelSelection').classList.add('active');
-    
     resetTest();
 }
 
@@ -197,62 +163,36 @@ function updateLevelInfo() {
     const targetInfo = document.getElementById('targetInfo');
     
     badge.textContent = target.name;
-    badge.className = 'level-badge';
-    
     if (currentLevel === 1) badge.style.background = '#4CAF50';
     if (currentLevel === 2) badge.style.background = '#FF9800';
     if (currentLevel === 3) badge.style.background = '#f44336';
     
-    const wordCount = currentText.split(' ').length;
-    description.textContent = `${wordCount} palabras`;
-    
+    description.textContent = `${currentText.split(' ').length} palabras`;
     targetInfo.innerHTML = `<strong>Meta:</strong> ${target.ppm}+ PPM | ${target.accuracy}%+ Precision`;
 }
 
 // ============================================
-// 📝 FUNCIONES DE VISUALIZACIÓN DEL TEXTO
+// 📝 VISUALIZACIÓN
 // ============================================
 
 function displayText() {
-    console.log('📝 Mostrando texto...');
-    
     const display = document.getElementById('textDisplay');
-    
     display.innerHTML = currentText.split('').map((char, index) => {
-        const displayChar = char === ' ' ? '&nbsp;' : char;
-        return `<span class="char" id="char-${index}">${displayChar}</span>`;
+        return `<span class="char" id="char-${index}">${char === ' ' ? '&nbsp;' : char}</span>`;
     }).join('');
-    
-    console.log(`✅ Texto mostrado: ${currentText.length} caracteres`);
 }
-
-// ============================================
-// 🎯 SCROLL AUTOMÁTICO MEJORADO
-// ============================================
 
 function scrollToCurrentChar() {
     const currentChar = document.querySelector('.char.current');
     if (currentChar) {
         const textDisplay = document.getElementById('textDisplay');
-        
-        // Obtener posiciones
         const charTop = currentChar.offsetTop;
-        const charHeight = currentChar.offsetHeight;
         const displayHeight = textDisplay.clientHeight;
         const scrollTop = textDisplay.scrollTop;
         
-        // Calcular si está fuera de vista
-        const charBottom = charTop + charHeight;
-        const viewTop = scrollTop;
-        const viewBottom = scrollTop + displayHeight;
-        
-        // Si el carácter está fuera de la vista
-        if (charTop < viewTop + 40 || charBottom > viewBottom - 40) {
-            // Centrar el carácter en la vista
-            const targetScroll = charTop - (displayHeight / 2) + (charHeight / 2);
-            
+        if (charTop < scrollTop + 20 || charTop > scrollTop + displayHeight - 60) {
             textDisplay.scrollTo({
-                top: Math.max(0, targetScroll),
+                top: Math.max(0, charTop - (displayHeight / 2) + 20),
                 behavior: 'smooth'
             });
         }
@@ -260,16 +200,11 @@ function scrollToCurrentChar() {
 }
 
 // ============================================
-// ⏱️ FUNCIONES DEL TEST
+// ⏱️ TEST
 // ============================================
 
 function startTest() {
-    if (isTestActive) {
-        console.log('⚠️ Test ya esta activo');
-        return;
-    }
-    
-    console.log('🚀 Iniciando test...');
+    if (isTestActive) return;
     
     isTestActive = true;
     startTime = Date.now();
@@ -285,10 +220,7 @@ function startTest() {
     document.getElementById('results').classList.remove('show');
     
     timerInterval = setInterval(updateTimer, 100);
-    
     inputArea.addEventListener('input', handleInput);
-    
-    console.log('✅ Test iniciado');
 }
 
 function handleInput(e) {
@@ -296,19 +228,14 @@ function handleInput(e) {
     
     const inputText = e.target.value;
     totalChars = inputText.length;
-    
     errors = 0;
     
     for (let i = 0; i < currentText.length; i++) {
         const charElement = document.getElementById(`char-${i}`);
         
         if (i < inputText.length) {
-            if (inputText[i] === currentText[i]) {
-                charElement.className = 'char correct';
-            } else {
-                charElement.className = 'char incorrect';
-                errors++;
-            }
+            charElement.className = inputText[i] === currentText[i] ? 'char correct' : 'char incorrect';
+            if (inputText[i] !== currentText[i]) errors++;
         } else if (i === inputText.length) {
             charElement.className = 'char current';
         } else {
@@ -316,20 +243,14 @@ function handleInput(e) {
         }
     }
     
-    // SCROLL AUTOMÁTICO
     scrollToCurrentChar();
-    
     updateStats();
     
-    if (inputText.length >= currentText.length) {
-        console.log('🏁 Test completado');
-        finishTest();
-    }
+    if (inputText.length >= currentText.length) finishTest();
 }
 
 function updateTimer() {
     if (!startTime) return;
-    
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     document.getElementById('timer').textContent = elapsed + 's';
 }
@@ -338,13 +259,8 @@ function updateStats() {
     if (!startTime) return;
     
     const elapsed = (Date.now() - startTime) / 1000 / 60;
-    const wordsTyped = totalChars / 5;
-    const ppm = Math.round(wordsTyped / elapsed) || 0;
-    
-    const accuracy = totalChars > 0 
-        ? Math.round(((totalChars - errors) / totalChars) * 100)
-        : 100;
-    
+    const ppm = Math.round((totalChars / 5) / elapsed) || 0;
+    const accuracy = totalChars > 0 ? Math.round(((totalChars - errors) / totalChars) * 100) : 100;
     const score = Math.round(ppm * (accuracy / 100));
     
     document.getElementById('wpm').textContent = ppm;
@@ -354,16 +270,12 @@ function updateStats() {
 }
 
 function finishTest() {
-    console.log('🏁 Finalizando test...');
-    
     stopTest();
     
     const finalTime = Math.floor((Date.now() - startTime) / 1000);
     const ppm = parseInt(document.getElementById('wpm').textContent);
     const accuracy = parseInt(document.getElementById('accuracy').textContent);
     const score = parseInt(document.getElementById('score').textContent);
-    
-    console.log(`📊 Resultados: ${ppm} PPM | ${accuracy}% | Score: ${score}`);
     
     saveResults(finalTime, ppm, accuracy, score);
     showResults(finalTime, ppm, accuracy, score);
@@ -372,33 +284,21 @@ function finishTest() {
 function stopTest() {
     isTestActive = false;
     clearInterval(timerInterval);
-    
     const inputArea = document.getElementById('inputArea');
     inputArea.disabled = true;
     inputArea.removeEventListener('input', handleInput);
-    
     document.getElementById('startBtn').disabled = false;
-    
-    console.log('⏹️ Test detenido');
 }
 
 function resetTest() {
-    console.log('🔄 Reiniciando test...');
-    
     stopTest();
-    
     startTime = null;
     errors = 0;
     totalChars = 0;
-    
     document.getElementById('inputArea').value = '';
-    
     resetStats();
     document.getElementById('results').classList.remove('show');
-    
     displayText();
-    
-    console.log('✅ Test reiniciado');
 }
 
 function resetStats() {
@@ -410,12 +310,10 @@ function resetStats() {
 }
 
 // ============================================
-// 💾 GUARDAR RESULTADOS
+// 💾 GUARDAR
 // ============================================
 
 function saveResults(time, ppm, accuracy, score) {
-    console.log('💾 Guardando resultados...');
-    
     document.getElementById('loadingOverlay').classList.add('show');
     document.querySelector('.loading-overlay p').textContent = 'Guardando resultados...';
     
@@ -432,98 +330,67 @@ function saveResults(time, ppm, accuracy, score) {
         texto_palabras: currentText.split(' ').length
     };
     
-    console.log('📤 Enviando datos:', data);
-    
     if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-        console.error('❌ URL no configurada');
         document.getElementById('loadingOverlay').classList.remove('show');
-        alert('⚠️ Los resultados no se guardaran. Sistema no configurado.');
         return;
     }
     
     fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
     .then(() => {
-        console.log('✅ Datos enviados correctamente');
+        console.log('✅ Datos enviados');
         document.getElementById('loadingOverlay').classList.remove('show');
     })
-    .catch(error => {
-        console.error('❌ Error al enviar datos:', error);
+    .catch(() => {
         document.getElementById('loadingOverlay').classList.remove('show');
     });
 }
 
 // ============================================
-// 📊 MOSTRAR RESULTADOS (Q1 = MEJOR, Q4 = PEOR)
+// 📊 RESULTADOS
 // ============================================
 
 function showResults(time, ppm, accuracy, score) {
-    console.log('📊 Mostrando resultados...');
-    
     const target = LEVEL_TARGETS[currentLevel];
     const metPPM = ppm >= target.ppm;
     const metAccuracy = accuracy >= target.accuracy;
     const passedLevel = metPPM && metAccuracy;
-    
     const quartile = calculateQuartile(score, currentLevel);
     
-    const resultsDiv = document.getElementById('results');
-    
-    resultsDiv.innerHTML = `
-        <h2>${passedLevel ? '🎉 ¡Excelente trabajo!' : '💪 Sigue practicando'}</h2>
-        
+    document.getElementById('results').innerHTML = `
+        <h2>${passedLevel ? '🎉 ¡Excelente!' : '💪 Sigue practicando'}</h2>
         <div class="results-grid">
             <div class="result-item">
-                <strong>⏱️ Tiempo Total</strong>
+                <strong>⏱️ Tiempo</strong>
                 <div class="value">${time}s</div>
-                <small>${Math.floor(time / 60)}m ${time % 60}s</small>
             </div>
-            
             <div class="result-item">
-                <strong>⚡ Palabras por Minuto</strong>
-                <div class="value" style="color: ${metPPM ? '#4CAF50' : '#f44336'}">${ppm} PPM</div>
-                <small>${metPPM ? '✅' : '❌'} Meta: ${target.ppm}+ PPM</small>
+                <strong>⚡ PPM</strong>
+                <div class="value" style="color: ${metPPM ? '#4CAF50' : '#f44336'}">${ppm}</div>
+                <small>${metPPM ? '✅' : '❌'} Meta: ${target.ppm}+</small>
             </div>
-            
             <div class="result-item">
                 <strong>🎯 Precision</strong>
                 <div class="value" style="color: ${metAccuracy ? '#4CAF50' : '#f44336'}">${accuracy}%</div>
                 <small>${metAccuracy ? '✅' : '❌'} Meta: ${target.accuracy}%+</small>
             </div>
-            
             <div class="result-item">
-                <strong>📊 Puntaje Final</strong>
+                <strong>📊 Puntaje</strong>
                 <div class="value">${score}</div>
-                <small>PPM × Precision</small>
             </div>
         </div>
-        
         <div class="quartile-info">
-            <h3>📍 Tu Ubicacion en el Ranking</h3>
+            <h3>📍 Tu Ubicacion</h3>
             <div class="quartile-badge ${quartile.class}">${quartile.label}</div>
             <p>${quartile.description}</p>
         </div>
-        
-        <div class="performance-message">
-            <strong>${passedLevel ? '🎯 ¡Meta alcanzada!' : '💪 Continua mejorando'}</strong>
-            <p>${getPerformanceMessage(ppm, accuracy, target)}</p>
-        </div>
     `;
-    
-    resultsDiv.classList.add('show');
-    
-    console.log('✅ Resultados mostrados');
+    document.getElementById('results').classList.add('show');
 }
-
-// ============================================
-// 🔄 CUARTILES INVERTIDOS (Q1 = MEJOR, Q4 = PEOR)
-// ============================================
 
 function calculateQuartile(score, level) {
     const ranges = {
@@ -534,83 +401,23 @@ function calculateQuartile(score, level) {
     
     const range = ranges[level];
     
-    if (score >= range.q1) {
-        return {
-            label: 'Q1 - Top Performer',
-            class: 'q1',
-            description: '¡Excelente! Estas en el 25% superior. Eres un referente del equipo.'
-        };
-    } 
-    else if (score >= range.q2) {
-        return {
-            label: 'Q2 - Competente',
-            class: 'q2',
-            description: '¡Buen trabajo! Estas por encima del promedio.'
-        };
-    } 
-    else if (score >= range.q3) {
-        return {
-            label: 'Q3 - En Desarrollo',
-            class: 'q3',
-            description: 'Estas en el promedio. Sigue practicando.'
-        };
-    } 
-    else {
-        return {
-            label: 'Q4 - Necesita Mejora',
-            class: 'q4',
-            description: 'Practica mas para mejorar tu velocidad y precision.'
-        };
-    }
+    if (score >= range.q1) return { label: 'Q1 - Top Performer', class: 'q1', description: '¡Excelente! Top 25%' };
+    if (score >= range.q2) return { label: 'Q2 - Competente', class: 'q2', description: 'Buen trabajo!' };
+    if (score >= range.q3) return { label: 'Q3 - En Desarrollo', class: 'q3', description: 'Sigue practicando' };
+    return { label: 'Q4 - Necesita Mejora', class: 'q4', description: 'Practica mas' };
 }
-
-function getPerformanceMessage(ppm, accuracy, target) {
-    if (ppm >= target.ppm && accuracy >= target.accuracy) {
-        return `Has superado las metas del ${target.name}. ¡Estas listo para casos reales!`;
-    } else if (ppm < target.ppm && accuracy >= target.accuracy) {
-        return `Tu precision es excelente (${accuracy}%), pero necesitas aumentar velocidad. Meta: ${target.ppm} PPM.`;
-    } else if (ppm >= target.ppm && accuracy < target.accuracy) {
-        return `Tienes buena velocidad (${ppm} PPM), pero cometes errores. Meta: ${target.accuracy}%.`;
-    } else {
-        return `Necesitas mejorar velocidad y precision. ¡Practica mas!`;
-    }
-}
-
-// ============================================
-// 🚀 INICIALIZACIÓN
-// ============================================
 
 window.onload = function() {
-    console.log('🚀 Sistema de Mecanografia iniciado');
-    console.log('📅 Fecha:', new Date().toLocaleString('es-ES'));
-    
-    if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-        console.warn('⚠️ URL de Google Apps Script NO configurada');
-    } else {
-        console.log('✅ URL configurada');
-    }
+    console.log('✅ Sistema iniciado');
+    document.getElementById('userId').focus();
 };
-
-// ============================================
-// 🔧 UTILIDADES
-// ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
     const inputArea = document.getElementById('inputArea');
-    
     if (inputArea) {
-        // Bloquear pegado
         inputArea.addEventListener('paste', function(e) {
             e.preventDefault();
-            alert('⚠️ No esta permitido pegar texto. Debes escribirlo manualmente.');
+            alert('⚠️ No puedes pegar texto');
         });
-        
-        console.log('✅ Proteccion contra pegado activada');
-    }
-    
-    // Focus automático en el campo LDAP
-    const userIdInput = document.getElementById('userId');
-    if (userIdInput) {
-        userIdInput.focus();
     }
 });
