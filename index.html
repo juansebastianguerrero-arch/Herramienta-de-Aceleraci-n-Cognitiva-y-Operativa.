@@ -14,16 +14,12 @@
             <p>Mejora tu velocidad y precisión en el proceso de atención</p>
         </div>
 
-        <!-- LOGIN SECTION -->
+        <!-- LOGIN SECTION - SOLO LDAP -->
         <div class="login-section" id="loginSection">
-            <div class="user-info">
+            <div class="user-info" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto;">
                 <div class="input-group">
-                    <label for="userName">👤 Nombre Completo:</label>
-                    <input type="text" id="userName" placeholder="Ej: Johan Colmenares" autocomplete="off">
-                </div>
-                <div class="input-group">
-                    <label for="userId">🆔 ID de Usuario:</label>
-                    <input type="text" id="userId" placeholder="Ej: jcolmenares" autocomplete="off">
+                    <label for="userId">🆔 ID de Usuario (LDAP):</label>
+                    <input type="text" id="userId" placeholder="Ej: jcolmenares" autocomplete="off" style="text-align: center; font-size: 20px; font-weight: 600;">
                 </div>
             </div>
             <div class="buttons">
@@ -151,7 +147,7 @@
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
-        <p>Guardando resultados...</p>
+        <p>Validando LDAP...</p>
     </div>
 
     <script src="app.js"></script>
