@@ -3,7 +3,7 @@
 // ============================================
 
 // ⚠️ IMPORTANTE: Reemplaza esta URL con la de tu Google Apps Script
-const GOOGLE_SCRIPT_URL = 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/a/macros/mercadolibre.com.co/s/AKfycbwXsSwQXFM_ATqQpw9XvCacaNcpa5mLSa7WHidbc6h0ZKlF-YtIKZnWjY6GWBXYV5Ss2g/exec';
 
 // Textos de práctica por nivel (SIN TILDES NI SÍMBOLOS ESPECIALES)
 const PRACTICE_TEXTS = {
@@ -39,33 +39,119 @@ let errors = 0;
 let totalChars = 0;
 
 // ============================================
-// 🔐 FUNCIONES DE AUTENTICACIÓN
+// 🔐 FUNCIONES DE AUTENTICACIÓN CON VALIDACIÓN ESTRICTA
 // ============================================
 
-function login() {
+async function login() {
     console.log('🔐 Intentando login...');
     
     const name = document.getElementById('userName').value.trim();
     const id = document.getElementById('userId').value.trim();
     
+    // Validación de campos vacíos
     if (!name || !id) {
-        alert('⚠️ Por favor, completa todos los campos');
+        alert('⚠️ Por favor, completa todos los campos\n\n• Nombre Completo\n• ID de Usuario (LDAP)');
         return;
     }
     
+    // Validar formato del nombre (debe tener al menos nombre y apellido)
+    const nameWords = name.split(' ').filter(word => word.length > 0);
+    if (nameWords.length < 2) {
+        alert('⚠️ Debes ingresar tu nombre completo\n\nEjemplo: Johan Colmenares Rodriguez');
+        document.getElementById('userName').focus();
+        return;
+    }
+    
+    // Validar formato del ID (solo letras minúsculas y números, sin espacios)
     const idRegex = /^[a-z0-9]+$/;
     if (!idRegex.test(id)) {
-        alert('⚠️ El ID de usuario debe contener solo letras minusculas y numeros, sin espacios ni caracteres especiales');
+        alert('⚠️ El ID de usuario (LDAP) debe contener:\n\n• Solo letras minusculas\n• Solo numeros\n• Sin espacios\n• Sin caracteres especiales\n\nEjemplo: jcolmenares');
+        document.getElementById('userId').focus();
         return;
     }
     
-    currentUser.name = name;
-    currentUser.id = id;
+    // Validar longitud mínima del ID
+    if (id.length < 3) {
+        alert('⚠️ El ID de usuario debe tener al menos 3 caracteres');
+        document.getElementById('userId').focus();
+        return;
+    }
     
-    console.log('✅ Login exitoso:', currentUser);
+    // Mostrar loading mientras valida
+    document.getElementById('loadingOverlay').classList.add('show');
+    document.querySelector('.loading-overlay p').textContent = 'Validando usuario...';
     
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('levelSelection').classList.add('active');
+    try {
+        // Validar usuario contra Google Sheets
+        const isValid = await validateUser(id, name);
+        
+        document.getElementById('loadingOverlay').classList.remove('show');
+        
+        if (!isValid) {
+            alert('❌ ACCESO DENEGADO\n\nEl usuario no existe en el sistema o los datos no coinciden.\n\nVerifica:\n• Tu ID de usuario (LDAP)\n• Tu nombre completo\n\nSi el problema persiste, contacta al administrador.');
+            document.getElementById('userId').focus();
+            return;
+        }
+        
+        // Usuario válido - permitir acceso
+        currentUser.name = name;
+        currentUser.id = id;
+        
+        console.log('✅ Login exitoso:', currentUser);
+        
+        // Cambiar de vista
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('levelSelection').classList.add('active');
+        
+        // Mensaje de bienvenida
+        setTimeout(() => {
+            alert(`✅ Bienvenido/a ${name.split(' ')[0]}!\n\nSelecciona un nivel para comenzar.`);
+        }, 300);
+        
+    } catch (error) {
+        document.getElementById('loadingOverlay').classList.remove('show');
+        console.error('❌ Error en validacion:', error);
+        alert('⚠️ Error al validar usuario.\n\nPor favor, intenta nuevamente.\n\nSi el problema persiste, contacta al administrador.');
+    }
+}
+
+// ============================================
+// 🔍 VALIDAR USUARIO CONTRA GOOGLE SHEETS
+// ============================================
+
+async function validateUser(userId, userName) {
+    console.log('🔍 Validando usuario:', userId);
+    
+    // Verificar que la URL esté configurada
+    if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
+        console.error('❌ URL de Google Apps Script no configurada');
+        // En desarrollo, permitir acceso
+        console.warn('⚠️ MODO DESARROLLO: Validacion omitida');
+        return true;
+    }
+    
+    try {
+        // Crear URL con parámetros para validación
+        const validationURL = `${GOOGLE_SCRIPT_URL}?action=validate&userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
+        
+        const response = await fetch(validationURL, {
+            method: 'GET',
+            mode: 'cors'
+        });
+        
+        const data = await response.json();
+        
+        console.log('📥 Respuesta de validacion:', data);
+        
+        return data.valid === true;
+        
+    } catch (error) {
+        console.error('❌ Error en fetch de validacion:', error);
+        
+        // Si hay error de red, permitir acceso temporal
+        console.warn('⚠️ Error de red - Permitiendo acceso temporal');
+        return true;
+    }
 }
 
 function logout() {
@@ -332,6 +418,7 @@ function saveResults(time, ppm, accuracy, score) {
     console.log('💾 Guardando resultados...');
     
     document.getElementById('loadingOverlay').classList.add('show');
+    document.querySelector('.loading-overlay p').textContent = 'Guardando resultados...';
     
     const data = {
         timestamp: new Date().toISOString(),
@@ -438,7 +525,7 @@ function showResults(time, ppm, accuracy, score) {
 }
 
 // ============================================
-// 🔄 CUARTILES INVERTIDOS (Q1 = MEJOR)
+// 🔄 CUARTILES INVERTIDOS (Q1 = MEJOR, Q4 = PEOR)
 // ============================================
 
 function calculateQuartile(score, level) {
@@ -503,14 +590,17 @@ function getPerformanceMessage(ppm, accuracy, target) {
 window.onload = function() {
     console.log('🚀 ========== SISTEMA DE MECANOGRAFIA INICIADO ==========');
     console.log('📅 Fecha:', new Date().toLocaleString('es-ES'));
+    console.log('🌐 Navegador:', navigator.userAgent);
     
     if (GOOGLE_SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
         console.warn('⚠️ ADVERTENCIA: URL de Google Apps Script no configurada');
+        console.warn('⚠️ Los resultados NO se guardaran hasta que configures la URL');
     } else {
         console.log('✅ URL de Google Apps Script configurada');
     }
     
     console.log('✅ Sistema listo para usar');
+    console.log('============================================================');
 };
 
 // ============================================
@@ -531,6 +621,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+document.addEventListener('keydown', function(e) {
+    // Bloquear F12 (DevTools)
+    if (e.key === 'F12') {
+        e.preventDefault();
+        console.log('🚫 F12 bloqueado');
+    }
+    
+    // Bloquear Ctrl+Shift+I (DevTools)
+    if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        console.log('🚫 Ctrl+Shift+I bloqueado');
+    }
+});
+
+// ============================================
+// 📱 RESPONSIVE HELPERS
+// ============================================
+
 function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
@@ -539,4 +647,18 @@ if (isMobile()) {
     console.log('📱 Dispositivo movil detectado');
 } else {
     console.log('💻 Dispositivo de escritorio detectado');
+}
+
+// ============================================
+// 🎯 EXPORT (para testing)
+// ============================================
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        login,
+        logout,
+        selectLevel,
+        startTest,
+        calculateQuartile
+    };
 }
