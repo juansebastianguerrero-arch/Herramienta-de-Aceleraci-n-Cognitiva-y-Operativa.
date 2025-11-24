@@ -338,6 +338,10 @@ body {
     color: #1e3c72;
 }
 
+/* ============================================
+   TEXT DISPLAY CON SCROLL AUTOMÁTICO
+   ============================================ */
+
 .text-display {
     background: #f9f9f9;
     padding: 30px;
@@ -346,9 +350,32 @@ body {
     line-height: 2;
     margin-bottom: 25px;
     min-height: 220px;
+    max-height: 220px;
+    overflow-y: auto;
     border: 2px solid #e0e0e0;
     font-family: 'Courier New', monospace;
     letter-spacing: 0.5px;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+/* Personalizar scrollbar */
+.text-display::-webkit-scrollbar {
+    width: 8px;
+}
+
+.text-display::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.text-display::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.text-display::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .text-display .char {
@@ -615,22 +642,22 @@ button:disabled {
 }
 
 .q1 { 
-    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
     color: white; 
 }
 
 .q2 { 
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-    color: white; 
-}
-
-.q3 { 
     background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
     color: white; 
 }
 
+.q3 { 
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white; 
+}
+
 .q4 { 
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
     color: white; 
 }
 
