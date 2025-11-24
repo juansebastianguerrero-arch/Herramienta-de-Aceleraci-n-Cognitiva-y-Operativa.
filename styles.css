@@ -1284,3 +1284,817 @@ button:disabled {
         display: none !important;
     }
 }
+
+/* ============================================
+   📈 MÉTRICAS AVANZADAS
+   ============================================ */
+
+.advanced-metrics {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: var(--border-radius-md);
+    border: 2px solid var(--bg-dark);
+}
+
+.advanced-metrics h3 {
+    color: var(--text-dark);
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.metric-item {
+    background: var(--bg-white);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+    border-left: 4px solid var(--primary-color);
+}
+
+.metric-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.metric-icon {
+    font-size: 28px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.metric-label {
+    flex: 1;
+    color: var(--text-light);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.metric-value {
+    color: var(--primary-color);
+    font-size: 20px;
+    font-weight: 800;
+}
+
+/* ============================================
+   ✅ CONFIRMACIÓN DE GUARDADO AUTOMÁTICO
+   ============================================ */
+
+.save-confirmation {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    border-left: 5px solid #4caf50;
+    box-shadow: var(--shadow-sm);
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.save-confirmation p {
+    color: #2e7d32;
+    font-size: 17px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.save-confirmation p::before {
+    content: '✅';
+    font-size: 24px;
+    animation: checkmark 0.5s ease-out;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.save-confirmation small {
+    color: #558b2f;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ============================================
+   🎯 MEJORAS EN RESULTS CARD
+   ============================================ */
+
+.results-card {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xl);
+    border: 4px solid #4caf50;
+    box-shadow: var(--shadow-xl);
+    animation: slideUp 0.6s ease-out;
+}
+
+.results-card.warning {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-color: #ff9800;
+}
+
+.results-card h2 {
+    color: #2e7d32;
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+    font-size: 32px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.results-card.warning h2 {
+    color: #e65100;
+}
+
+/* ============================================
+   📊 RESULTS GRID MEJORADO
+   ============================================ */
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.result-item {
+    background: var(--bg-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    transition: var(--transition-normal);
+    border-top: 4px solid var(--primary-color);
+}
+
+.result-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.result-label {
+    display: block;
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: var(--spacing-xs);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.result-value {
+    font-size: 40px;
+    color: var(--primary-color);
+    font-weight: 900;
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.result-value.success {
+    color: #2e7d32;
+    animation: pulse-success 0.5s ease-out;
+}
+
+@keyframes pulse-success {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.result-value.warning {
+    color: #e65100;
+}
+
+.result-meta {
+    display: block;
+    font-size: 13px;
+    color: var(--text-lighter);
+    font-weight: 600;
+}
+
+/* ============================================
+   🏆 QUARTILE ITEM MEJORADO
+   ============================================ */
+
+.quartile-item {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: var(--spacing-xl);
+    border-top: 4px solid #ffd700;
+}
+
+.quartile-badge {
+    display: inline-block;
+    padding: 16px 32px;
+    border-radius: 30px;
+    font-size: 22px;
+    font-weight: 900;
+    margin: var(--spacing-sm) 0;
+    box-shadow: var(--shadow-lg);
+    animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.quartile-badge.q1 {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+    border: 3px solid #1976d2;
+}
+
+.quartile-badge.q2 {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2e7d32;
+    border: 3px solid #388e3c;
+}
+
+.quartile-badge.q3 {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    color: #e65100;
+    border: 3px solid #f57c00;
+}
+
+.quartile-badge.q4 {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #c62828;
+    border: 3px solid #d32f2f;
+}
+
+.quartile-description {
+    display: block;
+    color: var(--text-medium);
+    font-size: 16px;
+    margin-top: var(--spacing-sm);
+    font-weight: 600;
+}
+
+/* ============================================
+   💬 RESULT MESSAGE MEJORADO
+   ============================================ */
+
+.result-message {
+    background: var(--bg-white);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    animation: fadeIn 0.5s ease-out 0.3s both;
+}
+
+.result-message.success {
+    color: #2e7d32;
+    border-left: 5px solid #4caf50;
+    background: linear-gradient(135deg, #f1f8f4 0%, #e8f5e9 100%);
+}
+
+.result-message.warning {
+    color: #e65100;
+    border-left: 5px solid #ff9800;
+    background: linear-gradient(135deg, #fff8f0 0%, #fff3e0 100%);
+}
+
+/* ============================================
+   🔔 ALERTAS MEJORADAS
+   ============================================ */
+
+.alerta {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-xl);
+    font-weight: 700;
+    font-size: 16px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: var(--transition-normal);
+    max-width: 450px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    backdrop-filter: blur(10px);
+}
+
+.alerta.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.alerta-icon {
+    font-size: 28px;
+    animation: bounce 0.5s ease-out;
+}
+
+.alerta-text {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.alerta-success {
+    background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+    color: white;
+    border-left: 5px solid #2e7d32;
+}
+
+.alerta-error {
+    background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);
+    color: white;
+    border-left: 5px solid #c62828;
+}
+
+.alerta-warning {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+    color: white;
+    border-left: 5px solid #e65100;
+}
+
+.alerta-info {
+    background: linear-gradient(135deg, #2196f3 0%, #42a5f5 100%);
+    color: white;
+    border-left: 5px solid #1565c0;
+}
+
+/* ============================================
+   ⏳ LOADING OVERLAY MEJORADO
+   ============================================ */
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(102, 126, 234, 0.97);
+    backdrop-filter: blur(12px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 10000;
+}
+
+.loading-overlay.show {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.loading-spinner {
+    width: 90px;
+    height: 90px;
+    border: 8px solid rgba(255, 255, 255, 0.2);
+    border-top: 8px solid var(--bg-white);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.loading-overlay p {
+    color: white;
+    margin-top: var(--spacing-lg);
+    font-size: 22px;
+    font-weight: 700;
+    animation: pulse 1.5s ease-in-out infinite;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   🎯 PROGRESS INDICATOR MEJORADO
+   ============================================ */
+
+.progress-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #4caf50 0%, #8bc34a 50%, #cddc39 100%);
+    transition: width 0.3s ease;
+    border-radius: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+}
+
+/* ============================================
+   📱 RESPONSIVE PARA MÉTRICAS AVANZADAS
+   ============================================ */
+
+@media (max-width: 768px) {
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .advanced-metrics h3 {
+        font-size: 16px;
+    }
+    
+    .metric-item {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-xs);
+    }
+    
+    .metric-icon {
+        font-size: 32px;
+    }
+    
+    .metric-label {
+        font-size: 12px;
+    }
+    
+    .metric-value {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .advanced-metrics {
+        padding: var(--spacing-md);
+    }
+}
+
+/* ============================================
+   🎨 ANIMACIONES ADICIONALES
+   ============================================ */
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   🔢 ESTILOS PARA NÚMEROS Y ESTADÍSTICAS
+   ============================================ */
+
+.stat-highlight {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 900;
+}
+
+/* ============================================
+   💡 TOOLTIPS INFORMATIVOS
+   ============================================ */
+
+.info-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    color: var(--info-color);
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+.info-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+
+.info-tooltip:hover::after {
+    opacity: 1;
+}
+
+/* ============================================
+   🎨 BADGES Y ETIQUETAS
+   ============================================ */
+
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-success {
+    background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+    color: #2e7d32;
+}
+
+.badge-warning {
+    background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
+    color: #e65100;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
+    color: #c62828;
+}
+
+.badge-info {
+    background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+    color: #1565c0;
+}
+
+/* ============================================
+   📊 GRÁFICOS Y VISUALIZACIONES
+   ============================================ */
+
+.chart-container {
+    background: var(--bg-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+    margin: var(--spacing-lg) 0;
+}
+
+.chart-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+/* ============================================
+   🎯 INDICADORES DE RENDIMIENTO
+   ============================================ */
+
+.performance-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.performance-indicator.excellent {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2e7d32;
+}
+
+.performance-indicator.good {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+}
+
+.performance-indicator.average {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    color: #e65100;
+}
+
+.performance-indicator.poor {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #c62828;
+}
+
+/* ============================================
+   📈 BARRAS DE PROGRESO
+   ============================================ */
+
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: var(--bg-light);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* ============================================
+   🎨 EFECTOS HOVER AVANZADOS
+   ============================================ */
+
+.hover-scale {
+    transition: var(--transition-normal);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.hover-glow {
+    transition: var(--transition-normal);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+}
+
+/* ============================================
+   📱 RESPONSIVE ADICIONAL
+   ============================================ */
+
+@media (max-width: 1200px) {
+    .results-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .results-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .result-value {
+        font-size: 32px;
+    }
+    
+    .quartile-badge {
+        font-size: 18px;
+        padding: 12px 24px;
+    }
+}
+
+/* ============================================
+   🎯 UTILIDADES
+   ============================================ */
+
+.text-center {
+    text-align: center;
+}
+
+.text-bold {
+    font-weight: 700;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.mt-1 { margin-top: var(--spacing-xs); }
+.mt-2 { margin-top: var(--spacing-sm); }
+.mt-3 { margin-top: var(--spacing-md); }
+.mt-4 { margin-top: var(--spacing-lg); }
+.mt-5 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-xs); }
+.mb-2 { margin-bottom: var(--spacing-sm); }
+.mb-3 { margin-bottom: var(--spacing-md); }
+.mb-4 { margin-bottom: var(--spacing-lg); }
+.mb-5 { margin-bottom: var(--spacing-xl); }
+
+/* ============================================
+   🖨️ PRINT STYLES MEJORADOS
+   ============================================ */
+
+@media print {
+    body {
+        background: white;
+    }
+    
+    .container {
+        box-shadow: none;
+        padding: 20px;
+    }
+    
+    .buttons,
+    .loading-overlay,
+    .alerta,
+    .level-selection,
+    .typing-section {
+        display: none !important;
+    }
+    
+    .results-card {
+        border: 2px solid #333;
+        page-break-inside: avoid;
+    }
+    
+    .header {
+        background: #1e3c72 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* ============================================
+   ✨ EFECTOS ESPECIALES
+   ============================================ */
+
+.shimmer {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.glow-effect {
+    animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(102, 126, 234, 0.6);
+    }
+}
