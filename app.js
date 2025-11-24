@@ -565,7 +565,7 @@ function displayResultsWithButton(time, ppm, accuracy, score) {
 }
 
 // ============================================
-// 📊 ENVIAR DATOS A GOOGLE SHEETS
+// 📊 ENVIAR DATOS A GOOGLE SHEETS (MEJORADO)
 // ============================================
 
 function enviarDatosASheets() {
@@ -601,6 +601,16 @@ function enviarDatosASheets() {
     };
     
     console.log('📤 Enviando datos:', data);
+    console.log('🔗 URL destino:', GOOGLE_SCRIPT_URL);
+    
+    // Timeout de seguridad
+    const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Timeout alcanzado (15 segundos)');
+        ocultarLoading();
+        btn.innerHTML = '⚠️ Tiempo agotado - Verifica Google Sheets';
+        btn.style.background = 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)';
+        mostrarAlerta('⚠️ El envío tardó mucho. Verifica manualmente en Google Sheets si los datos se guardaron.', 'warning');
+    }, 15000);
     
     fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
@@ -609,9 +619,15 @@ function enviarDatosASheets() {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.text())
+    .then(response => {
+        clearTimeout(timeoutId);
+        console.log('📥 Respuesta HTTP:', response);
+        console.log('Status:', response.status);
+        console.log('OK:', response.ok);
+        return response.text();
+    })
     .then(text => {
-        console.log('📥 Respuesta recibida:', text);
+        console.log('📥 Respuesta texto:', text);
         
         try {
             const jsonResponse = JSON.parse(text);
@@ -624,7 +640,6 @@ function enviarDatosASheets() {
                 
                 mostrarAlerta('✅ Resultados guardados correctamente en Google Sheets!', 'success');
                 
-                // Mostrar información adicional
                 if (jsonResponse.data) {
                     console.log('📊 Datos guardados:', jsonResponse.data);
                     
@@ -640,15 +655,25 @@ function enviarDatosASheets() {
             }
         } catch (parseError) {
             console.error('❌ Error al parsear respuesta:', parseError);
+            console.error('Texto recibido:', text);
             ocultarLoading();
             btn.disabled = false;
             btn.innerHTML = '🔄 Reintentar Envío';
             btn.classList.add('pulse-animation');
-            mostrarAlerta('⚠️ Error al procesar respuesta. Verifica Google Sheets manualmente.', 'warning');
+            
+            // Si el texto está vacío, probablemente se guardó pero no llegó la respuesta
+            if (!text || text.trim() === '') {
+                mostrarAlerta('⚠️ No se recibió confirmación. Verifica Google Sheets para confirmar que se guardó.', 'warning');
+            } else {
+                mostrarAlerta('⚠️ Error al procesar respuesta. Verifica Google Sheets manualmente.', 'warning');
+            }
         }
     })
     .catch(error => {
-        console.error('❌ Error al enviar:', error);
+        clearTimeout(timeoutId);
+        console.error('❌ Error de red:', error);
+        console.error('Tipo de error:', error.name);
+        console.error('Mensaje:', error.message);
         ocultarLoading();
         btn.disabled = false;
         btn.innerHTML = '🔄 Reintentar Envío';
@@ -750,7 +775,7 @@ function mostrarAlerta(mensaje, tipo = 'info') {
 
 window.onload = function() {
     console.log('✅ Sistema de Mecanografia iniciado');
-    console.log('🔗 Google Script URL configurada');
+    console.log('🔗 Google Script URL:', GOOGLE_SCRIPT_URL);
     console.log('📋 Niveles disponibles:', Object.keys(LEVEL_TEXTS).length);
     
     // Focus en input de LDAP
@@ -781,4 +806,4 @@ window.onload = function() {
     });
 };
 
-console.log('📦 app.js cargado correctamente');
+console.log('📦 app.js cargado correctamente - Versión 2.0');
